@@ -27,8 +27,8 @@ hp = HumanPlayer(g).play
 
 # nnet players
 n1 = NNet(g)
-#n1.load_checkpoint('./temp/', 'best.pth.tar')
-n1.load_checkpoint('./temp/', 'checkpoint_5.pth.tar')
+n1.load_checkpoint('./temp/', 'best.pth.tar')
+# n1.load_checkpoint('./temp/', 'checkpoint_5.pth.tar')
 
 args1 = dotdict({'numMCTSSims': 50, 'cpuct':1.0})
 mcts1 = MCTS(g, n1, args1)
