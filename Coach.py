@@ -1,11 +1,13 @@
 from collections import deque
+import random
+import time, os, sys
+
+from pickle import Pickler, Unpickler
+from pytorch_classification.utils import Bar, AverageMeter
+import numpy as np
+
 from Arena import Arena
 from MCTS import MCTS
-import numpy as np
-from pytorch_classification.utils import Bar, AverageMeter
-import time, os, sys
-from pickle import Pickler, Unpickler
-from random import shuffle
 
 
 class Coach():
@@ -53,6 +55,7 @@ class Coach():
             for b,p in sym:
                 trainExamples.append([b, self.curPlayer, p, None])
 
+            np.random.seed(int(time.time()))
             action = np.random.choice(len(pi), p=pi)
             board, self.curPlayer = self.game.getNextState(board, self.curPlayer, action)
 
@@ -108,7 +111,8 @@ class Coach():
             trainExamples = []
             for e in self.trainExamplesHistory:
                 trainExamples.extend(e)
-            shuffle(trainExamples)
+            random.seed(time.time())
+            random.shuffle(trainExamples)
 
             # training new network, keeping a copy of the old one
             self.nnet.save_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
