@@ -9,6 +9,8 @@ from . import utils
 TEAM_1_COLOR = 'red'
 TEAM_2_COLOR = 'blue'
 
+INVALID_VALUE = 5000  # pymunk.inf
+
 class SimulationException(Exception): pass
 
 def getPlayerColor(player):
@@ -82,8 +84,8 @@ class Simulation:
         stone.id = stone_id
  
         if y > 2000:  # off the board
-            x = pymunk.inf
-            y = pymunk.inf
+            x = INVALID_VALUE
+            y = INVALID_VALUE
 
         stone.body.position = x, y
 
@@ -109,25 +111,23 @@ class Simulation:
         board = np.zeros(self.boardSize);
         all_stones = list(self.getStones())
 
-        print('beginning loop')
         for stone in all_stones:
-            print('Adding stone obj id ', id(stone))
             if stone.color == TEAM_1_COLOR:
-                print('Stone.id = %s. obj id = %s ' %( stone.id, id(stone)))
+                # print('Stone.id = %s. obj id = %s ' %( stone.id, id(stone)))
                 x_id = stone.id
                 y_id = x_id + 8
             else:
                 x_id = stone.id + 16
                 y_id = x_id + 8
 
-            board[x_id] = stone.body.position.x if stone.body else 5000
-            board[y_id] = stone.body.position.y if stone.body else 5000
+            board[x_id] = stone.body.position.x if stone.body else INVALID_VALUE
+            board[y_id] = stone.body.position.y if stone.body else INVALID_VALUE
 
         return board
     
     def run(self, deltaTime=utils.DT): 
         # print(''.join(['🥌'] * len(list(self.getStones()))))
-        print(utils.getRoundedBoard( self.getBoard() ) )
+        # print(utils.getRoundedBoard( self.getBoard() ) )
         more_changes = True
         last_break = 0
         sim_time = 0

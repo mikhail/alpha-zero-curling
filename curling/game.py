@@ -66,7 +66,23 @@ class CurlingGame(AbstractGameClass):
         return [0] * self.getActionSize()
 
     def getGameEnded(self, board, player):
-        return utils.getGameEnded(board, player)
+        if board[25] < 1:
+            return 0
+
+        self.sim.setupBoard(board)
+        stones = self.sim.getStones()
+
+        button = utils.pymunk.Vec2d(0, utils.dist(feet=124.5))
+        # Optimization - don't compute euclid twice
+        # add radius of stone to 6ft measurement
+        near_button = sorted(stones, key=lambda s: utils.euclid(s.body.position, button))
+        in_house = list(filter(lambda s:  utils.euclid(s.body.position, button) < utils.dist(feet=6), near_button))
+        if len(in_house) == 0:
+            return 0.001
+
+        win_color = in_house[0].color
+        # XXX: single-end simulation doesn't care about total count
+        return 1 if win_color == utils.TEAM_1_COLOR else -1
 
     def getCanonicalForm(self, board, player):
         if player == 1:

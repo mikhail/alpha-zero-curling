@@ -15,7 +15,7 @@ DT = 0.002  # Simulation deltaTime
 WEIGHT_FT = {
 #    '1': 108,
 #    '2': 112,
-#    '3': 118,
+    '3': 118,
 #    '4': 120,
 #    '5': 122,
 #    '6': 123,
@@ -26,13 +26,13 @@ WEIGHT_FT = {
 #    'backline': 130,
 #    'hack': 136,
 #    'board': 142,
-#    'control': 148,
+    'control': 148,
 #    'normal': 154,
 #    'peel': 160
 }
 
-HANDLES = (1,)  # rotation velocity
-BROOMS = (3,) # range(-6,7)
+HANDLES = (1, -1)  # rotation velocity
+BROOMS = range(-6,7)
 
 ACTION_LIST = tuple(
     (h,w,b)
@@ -167,14 +167,8 @@ def getCurlingVelocity(body):
 
     return curlVector;
 
-def getGameEnded(board, player):
-    if board[31] < 1: return 0  # 31 is the Y position of hammer.
-
-    team1 = zip(board[0:8], board[8:16])
-    team2 = zip(board[16:24], board[24:32])
-
-    print('failing on purpose')
-    raise
-
 def getRoundedBoard(board):
     return [round(v, 2) for v in board]
+
+def euclid(v1, v2):
+    return math.sqrt( ((v1.x-v2.x)**2)+((v1.y-v2.y)**2) )

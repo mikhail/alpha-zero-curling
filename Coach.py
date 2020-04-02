@@ -100,8 +100,9 @@ class Coach():
                 print("len(trainExamplesHistory) =", len(self.trainExamplesHistory), " => remove the oldest trainExamples")
                 self.trainExamplesHistory.pop(0)
             # backup history to a file
-            # NB! the examples were collected using the model from the previous iteration, so (i-1)  
+            # NOTE! the examples were collected using the model from the previous iteration, so (i-1)  
             self.saveTrainExamples(i-1)
+            self.saveTrainExamples('latest')
             
             # shuffle examples before training
             trainExamples = []
