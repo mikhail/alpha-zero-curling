@@ -2,42 +2,59 @@ import math
 
 import pymunk
 
+TEAM_1_COLOR = 'red'
+TEAM_2_COLOR = 'blue'
 
-
+STONE_RADIUS_IN = 5.73
 STONE_MASS = 2  # units don't matter... 1 'stone" weight.
-DT = 0.002
+G_FORCE = 9.81  # In meters
 SURFACE_FRICTION = 0.02  # Experimentally picked -- draw weight of 20s
+
+DT = 0.002  # Simulation deltaTime
+
+WEIGHT_FT = {
+#    '1': 108,
+#    '2': 112,
+#    '3': 118,
+#    '4': 120,
+#    '5': 122,
+#    '6': 123,
+    '7': 124.5,
+#    '8': 126,
+#    '9': 127,
+#    '10': 129,
+#    'backline': 130,
+#    'hack': 136,
+#    'board': 142,
+#    'control': 148,
+#    'normal': 154,
+#    'peel': 160
+}
+
+HANDLES = (1,)  # rotation velocity
+BROOMS = (3,) # range(-6,7)
+
+ACTION_LIST = tuple(
+    (h,w,b)
+        for h in HANDLES
+        for w in WEIGHT_FT.keys()
+        for b in BROOMS
+)
 
 def dist(inches=0, feet=0, meters=0):
     """Returns value in inches"""
     return (feet * 12) + inches + (meters * 39.3701)
 
-G_FORCE = dist(meters=9.81)
-STONE_RADIUS = dist(inches=5.73)
 
-WEIGHT_FT = {
-    '1': 108,
-    '2': 112,
-    '3': 118,
-    '4': 120,
-    '5': 122,
-    '6': 123,
-    '7': 124.5,
-    '8': 126,
-    '9': 127,
-    '10': 129,
-    'backline': 130,
-    'hack': 136,
-    'board': 142,
-    'control': 148,
-    'normal': 154,
-    'peel': 160
-}
-
-def weight_to_dist(w): return dist(feet=WEIGHT_FT[w.lower()])
+def weight_to_dist(w):
+    return dist(feet=WEIGHT_FT[w.lower()])
 
 def toFt(x):
     return f'{x/12:3.1f}'
+
+
+def getPlayerColor(player):
+    return sim.TEAM_1_COLOR if player == 1 else sim.TEAM_2_COLOR
 
 class Angle(float):
     def __str__(self):
@@ -48,7 +65,7 @@ class Angle(float):
         return clocks[i]
 
 def stone_velocity(body, gravity, damping, dt):
-    F_normal = body.mass * G_FORCE
+    F_normal = body.mass * dist(meters=G_FORCE)
     F_fr = SURFACE_FRICTION * F_normal
     body.force = body.velocity.normalized() * F_fr * -1
 
@@ -58,7 +75,7 @@ def stone_velocity(body, gravity, damping, dt):
     pymunk.Body.update_velocity(body, gravity, damping, dt)
 
 def calculateVelocityVector(weight: str, broom: int):
-    F_normal = STONE_MASS * G_FORCE
+    F_normal = STONE_MASS * dist(meters=G_FORCE)
     F_fr = SURFACE_FRICTION * F_normal
 
     work = weight_to_dist(weight) * F_fr # W = d*F
@@ -73,7 +90,7 @@ def addBoundaries(space):
     left = dist(feet=-7)
     right = dist(feet=7)
     # stones are removed when they exit the actual backline.
-    backline = dist(feet=130) + 2 * STONE_RADIUS
+    backline = dist(feet=130) + 2 * dist(inches=STONE_RADIUS_IN)
 
     w1, w2, w3 = (
         pymunk.Segment(space.static_body, (left, 0),         (left, backline),  1),
@@ -87,7 +104,10 @@ def addBoundaries(space):
 
     def remove_stone(arbiter, space, data):
         stone = arbiter.shapes[0]
-        space.remove(stone, stone.body)
+        stone.body.position = (5000, 5000)
+        # stone.body.position = (-1,-1)
+        stone.body.velocity = 0,0
+        #space.remove(stone, stone.body)
         return True
 
     space.add_collision_handler(1,2).begin = remove_stone
@@ -100,10 +120,19 @@ def still_moving(shape):
     return vx or vy
 
 
+class Stone(pymunk.Circle):
+
+    def __repr__(self):
+        return (
+            f'<Stone {self.id} {self.color} @ ('
+            f'{self.body.position.x:n},{self.body.position.y:n}'
+            ')>'
+            )
+
 def newStone(color):
     body = pymunk.Body()
     body.velocity_func = stone_velocity
-    stone = pymunk.Circle(body, STONE_RADIUS)
+    stone = Stone(body, dist(inches=STONE_RADIUS_IN))
     stone.mass = STONE_MASS
     stone.color = color
     stone.friction = 1.004  # interaction with other objects, not with "ice"
@@ -138,3 +167,14 @@ def getCurlingVelocity(body):
 
     return curlVector;
 
+def getGameEnded(board, player):
+    if board[31] < 1: return 0  # 31 is the Y position of hammer.
+
+    team1 = zip(board[0:8], board[8:16])
+    team2 = zip(board[16:24], board[24:32])
+
+    print('failing on purpose')
+    raise
+
+def getRoundedBoard(board):
+    return [round(v, 2) for v in board]

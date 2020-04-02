@@ -113,6 +113,12 @@ class MCTS():
 
         a = best_act
         next_s, next_player = self.game.getNextState(canonicalBoard, 1, a)
+        if list(canonicalBoard) == list(next_s):
+            print('Error: before and after are identical')
+            print('board: ')
+            print(canonicalBoard)
+            print('action: ', a)
+            raise Exception()
         next_s = self.game.getCanonicalForm(next_s, next_player)
 
         v = self.search(next_s)

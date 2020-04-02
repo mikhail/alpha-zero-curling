@@ -1,27 +1,35 @@
-import sys
 import numpy as np
+import sys
 
 sys.path.append('..')
-from Game import Game
+from Game import Game as AbstractGameClass
 
-def getNextStoneIds(board, player):
-    offset = 0 if player == 1 else 16
+from curling import simulation
+from curling import utils
 
-    last_stone = offset
-    for x in range(offset, offset + 8):
-        # Check Y for team 1 and team 2.
-        if board[x + 8] > 0:  # y for a player is 8 ahead of its x
-            last_stone = x + 1
+def getNextPlayer(board):
 
-    nx = last_stone
-    ny = last_stone + 8
-    return nx, ny
+    last_p1 = 0
+    for y in range(8,16):
+        if board[y] > 0:
+            last_p1 = y - 7
+
+    last_p2 = 0
+    for y in range(24,32):
+        if board[y] > 0:
+            last_p2 = y - 23
+
+    if last_p1 > last_p2:
+        return -1
+
+    return 1
 
 
-class CurlingGame(Game):
+class CurlingGame(AbstractGameClass):
 
     def __init__(self):
-        Game.__init__(self)
+        AbstractGameClass.__init__(self)
+        self.sim = simulation.Simulation()
 
     def getInitBoard(self):
         # x = 0 means center line. view from thrower. -6 means Skip's right
@@ -34,71 +42,56 @@ class CurlingGame(Game):
         # index 1 will be y for team 1
         # index 2 will be x for team 2
         # index 3 will be y for team 2
-        # index 4 not used
+        # index 4: not used
         return (5, 8)
 
     def getActionSize(self):
-        return 3  # guard, draw, takeout. No broom change
+        return len(utils.ACTION_LIST)
 
     def getNextState(self, board, player, action):
-        if action == 0:  # TODO: Figure out enumeration -.-"
-            # a guard
-            x = 0
-            y = 112
+        self.sim.setupBoard(board)
+        self.sim.setupAction(player, action)
+        self.sim.run()
 
-        if action == 1:
-            # a draw
-            x = 0
-            y = 120
-
-        if action == 2:
-            # a takeout
-            x = 0
-            y = 130
-
-        ix, iy = getNextStoneIds(board, player)
-        newboard = board.copy()
-        newboard[ix] = x
-        newboard[iy] = y
-
+        next_board = self.sim.getBoard()
         next_player = 0 - player
-        return newboard, next_player
+
+        return next_board, next_player
 
     def getValidMoves(self, board, player):
-        return [1] * self.getActionSize()  # all moves are valid
+        player_turn = getNextPlayer(board)
+        if player_turn == player:
+            return [1] * self.getActionSize()  # all moves are valid
+
+        return [0] * self.getActionSize()
 
     def getGameEnded(self, board, player):
-        nx, ny = getNextStoneIds(board, 1)
-        if nx < 8:
-            return 0
-
-        p1_score = sum([int(y == 120) for y in board[8:15]])
-        p2_score = sum([int(y == 120) for y in board[24:31]])
-
-        if player != 1:
-            p1_score, p2_score = p2_score, p1_score
-
-        if p1_score > p2_score:
-            return 1
-        if p1_score < p2_score:
-            return -1
-        return 0.0001
+        return utils.getGameEnded(board, player)
 
     def getCanonicalForm(self, board, player):
-        # Check if this needs to be changed by switching rows 01 and 23
-        return board
+        if player == 1:
+            return board
+
+        switched_board = self.getInitBoard()
+        switched_board[0:16] = board[16:32]
+        switched_board[16:32] = board[0:16]
+
+        return switched_board
+
 
     def getSymmetries(self, board, pi):
+        # TODO: this can be flipped over y axis
+        # all same-color stones can have full permutation
         return [(board, pi)]
 
     def stringRepresentation(self, board):
-        return str(list(board))
+        return str(utils.getRoundedBoard(board))
 
     @staticmethod
     def display(board):
         print(" -----------------------")
-        print(board[0:8])
-        print(board[8:16])
-        print(board[16:24])
-        print(board[24:32])
+        print([f'{p:2.2f}' for p in board[0:8]])
+        print([f'{p:2.2f}' for p in board[8:16]])
+        print([f'{p:2.2f}' for p in board[16:24]])
+        print([f'{p:2.2f}' for p in board[24:32]])
         print(" -----------------------")

@@ -1,167 +1,156 @@
 """
 To run tests:
-pytest-3 connect4
+pytest test_game.py
 """
 
-from collections import namedtuple
-import textwrap
 import numpy as np
+import pymunk
 
-from .Connect4Game import Connect4Game
-
-# Tuple of (Board, Player, Game) to simplify testing.
-BPGTuple = namedtuple('BPGTuple', 'board player game')
-
-
-def init_board_from_moves(moves, height=None, width=None):
-    """Returns a BPGTuple based on series of specified moved."""
-    game = Connect4Game(height=height, width=width)
-    board, player = game.getInitBoard(), 1
-    for move in moves:
-        board, player = game.getNextState(board, player, move)
-    return BPGTuple(board, player, game)
+from . import game
+from . import simulation
 
 
-def init_board_from_array(board, player):
-    """Returns a BPGTuple based on series of specified moved."""
-    game = Connect4Game(height=len(board), width=len(board[0]))
-    return BPGTuple(board, player, game)
+def test_getNextPlayer_0():
+    player = game.getNextPlayer(np.zeros(40))
+    assert player == 1
 
+def test_getNextPlayer_1():
+    board = np.zeros(40)
+    board[0] = -6
+    board[8] = 126
+    player = game.getNextPlayer(board)
+    assert player == -1
 
-def test_simple_moves():
-    board, player, game = init_board_from_moves([4, 5, 4, 3, 0, 6])
-    expected = textwrap.dedent("""\
-        [[ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  1.  0.  0.]
-         [ 1.  0.  0. -1.  1. -1. -1.]]""")
-    assert expected == game.stringRepresentation(board)
+def test_getNextPlayer_2():
+    board = np.zeros(40)
+    board[0] = -6
+    board[8] = 126
 
+    board[16] = -6
+    board[24] = 126
+    player = game.getNextPlayer(board)
+    assert player == 1
 
-def test_overfull_column():
-    for height in range(1, 10):
-        # Fill to max height is ok
-        init_board_from_moves([4] * height, height=height)
+def test_getNextPlayer_3():
+    board = np.zeros(40)
+    board[0] = -6
+    board[8] = 126
 
-        # Check overfilling causes an error.
-        try:
-            init_board_from_moves([4] * (height + 1), height=height)
-            assert False, "Expected error when overfilling column"
-        except ValueError:
-            pass  # Expected.
+    board[16] = -6
+    board[24] = 126
 
+    board[1] = -6
+    board[9] = 126
+    player = game.getNextPlayer(board)
+    assert player == -1
 
-def test_get_valid_moves():
-    """Tests vector of valid moved is correct."""
-    move_valid_pairs = [
-        ([], [True] * 7),
-        ([0, 1, 2, 3, 4, 5, 6], [True] * 7),
-        ([0, 1, 2, 3, 4, 5, 6] * 5, [True] * 7),
-        ([0, 1, 2, 3, 4, 5, 6] * 6, [False] * 7),
-        ([0, 1, 2] * 3 + [3, 4, 5, 6] * 6, [True] * 3 + [False] * 4),
-    ]
+def test_getNextPlayer_4():
+    board = np.zeros(40)
+    board[0] = -6
+    board[8] = 126
 
-    for moves, expected_valid in move_valid_pairs:
-        board, player, game = init_board_from_moves(moves)
-        assert (np.array(expected_valid) == game.getValidMoves(board, player)).all()
+    board[16] = -6
+    board[24] = 126
 
+    board[1] = -6
+    board[9] = 126
 
-def test_symmetries():
-    """Tests symetric board are produced."""
-    board, player, game = init_board_from_moves([0, 0, 1, 0, 6])
-    pi = [0.1, 0.2, 0.3]
-    (board1, pi1), (board2, pi2) = game.getSymmetries(board, pi)
-    assert [0.1, 0.2, 0.3] == pi1 and [0.3, 0.2, 0.1] == pi2
+    board[17] = -6
+    board[25] = 126
 
-    expected_board1 = textwrap.dedent("""\
-        [[ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  0.  0.  0.]
-         [-1.  0.  0.  0.  0.  0.  0.]
-         [-1.  0.  0.  0.  0.  0.  0.]
-         [ 1.  1.  0.  0.  0.  0.  1.]]""")
-    assert expected_board1 == game.stringRepresentation(board1)
+    player = game.getNextPlayer(board)
+    assert player == 1
 
-    expected_board2 = textwrap.dedent("""\
-        [[ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  0.  0.  0.]
-         [ 0.  0.  0.  0.  0.  0. -1.]
-         [ 0.  0.  0.  0.  0.  0. -1.]
-         [ 1.  0.  0.  0.  0.  1.  1.]]""")
-    assert expected_board2 == game.stringRepresentation(board2)
+def test_CanonicalBoard():
+    board = np.zeros(40)
+    board[0] = 1
+    board[8] = 2
 
+    board[16] = 3
+    board[24] = 4
 
-def test_game_ended():
-    """Tests game end detection logic based on fixed boards."""
-    array_end_state_pairs = [
-        (np.array([[0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0]]), 1, 0),
-        (np.array([[0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 1, 0],
-                   [0, 0, 0, 0, 1, 0, 0],
-                   [0, 0, 0, 1, 0, 0, 0],
-                   [0, 0, 1, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0]]), 1, 1),
-        (np.array([[0, 0, 0, 0, 1, 0, 0],
-                   [0, 0, 0, 1, 0, 0, 0],
-                   [0, 0, 1, 0, 0, 0, 0],
-                   [0, 1, 0, 0, 0, 0, 0],
-                   [0, 0, 0, 0, 0, 0, 0]]), -1, -1),
-        (np.array([[0, 0, 0, 0, 0, 0, 0],
-                   [0, 0, 1, 0, 0, 0, 0],
-                   [0, 0, 0, 1, 0, 0, 0],
-                   [0, 0, 0, 0, 1, 0, 0],
-                   [0, 0, 0, 0, 0, 1, 0]]), -1, -1),
-        (np.array([[0, 0, 0, -1],
-                   [0, 0, -1, 0],
-                   [0, -1, 0, 0],
-                   [-1, 0, 0, 0]]), 1, -1),
-        (np.array([[0, 0, 0, 0, 1],
-                   [0, 0, 0, 1, 0],
-                   [0, 0, 1, 0, 0],
-                   [0, 1, 0, 0, 0]]), -1, -1),
-        (np.array([[1, 0, 0, 0, 0],
-                   [0, 1, 0, 0, 0],
-                   [0, 0, 1, 0, 0],
-                   [0, 0, 0, 1, 0]]), -1, -1),
-        (np.array([[ 0,  0,  0,  0,  0,  0,  0],
-                   [ 0,  0,  0, -1,  0,  0,  0],
-                   [ 0,  0,  0, -1,  0,  0,  1],
-                   [ 0,  0,  0,  1,  1, -1, -1],
-                   [ 0,  0,  0, -1,  1,  1,  1],
-                   [ 0, -1,  0, -1,  1, -1,  1]]), -1, 0),
-        (np.array([[ 0.,  0.,  0.,  0.,  0.,  0.,  0.],
-                   [ 0.,  0.,  0., -1.,  0.,  0.,  0.],
-                   [ 1.,  0.,  1., -1.,  0.,  0.,  0.],
-                   [-1., -1.,  1.,  1.,  0.,  0.,  0.],
-                   [ 1.,  1.,  1., -1.,  0.,  0.,  0.],
-                   [ 1., -1.,  1., -1.,  0., -1.,  0.]]), -1, -1),
-        (np.array([[ 0.,  0.,  0.,  1.,  0.,  0.,  0.,],
-                   [ 0.,  0.,  0.,  1.,  0.,  0.,  0.,],
-                   [ 0.,  0.,  0., -1.,  0.,  0.,  0.,],
-                   [ 0.,  0.,  1.,  1., -1.,  0., -1.,],
-                   [ 0.,  0., -1.,  1.,  1.,  1.,  1.,],
-                   [-1.,  0., -1.,  1., -1., -1., -1.,],]), 1, 1),
-        ]
+    curling = game.CurlingGame()
+    actual = curling.getCanonicalForm(board, -1)
 
-    for np_pieces, player, expected_end_state in array_end_state_pairs:
-        board, player, game = init_board_from_array(np_pieces, player)
-        end_state = game.getGameEnded(board, player)
-        assert expected_end_state == end_state, ("expected=%s, actual=%s, board=\n%s" % (expected_end_state, end_state, board))
+    expected = np.zeros(40)
+    expected[16] = 1
+    expected[24] = 2
+    expected[0] = 3
+    expected[8] = 4
 
+    assert list(actual) == list(expected)
 
-def test_immutable_move():
-    """Test original board is not mutated whtn getNextState() called."""
-    board, player, game = init_board_from_moves([1, 2, 3, 3, 4])
-    original_board_string = game.stringRepresentation(board)
+def test_simulation_setupBoard():
+    board = np.zeros(40)
+    board[0] = 1
+    board[8] = 2
 
-    new_np_pieces, new_player = game.getNextState(board, 3, -1)
+    board[16] = 3
+    board[24] = 4
 
-    assert original_board_string == game.stringRepresentation(board)
-    assert original_board_string != game.stringRepresentation(new_np_pieces)
+    sim = simulation.Simulation()
+    sim.setupBoard(board)
+    stones = list(sim.getStones())
+    assert len(stones) == 2
+
+def test_simulation_setupBoard_2():
+    board = np.zeros(40)
+    board[0] = 0
+    board[8] = 0
+
+    board[16] = 5000
+    board[24] = 5000
+
+    sim = simulation.Simulation()
+    sim.setupBoard(board)
+    stones = list(sim.getStones())
+    assert len(stones) == 1
+
+def test_simulation_getNextStoneId():
+    sim = simulation.Simulation()
+
+    i = simulation.getNextStoneId( sim.getBoard() )
+    assert i == 0  # for red
+
+    sim.addStone(simulation.TEAM_1_COLOR, 20, 30)
+
+    i = simulation.getNextStoneId( sim.getBoard() )
+    assert i == 0  # for blue
+
+    sim.addStone(simulation.TEAM_2_COLOR, 30, 40)
+
+    i = simulation.getNextStoneId( sim.getBoard() )
+    assert i == 1  # for red
+
+    sim.addStone(simulation.TEAM_1_COLOR, 40, 50)
+
+    i = simulation.getNextStoneId( sim.getBoard() )
+    assert i == 1  # for blue
+
+def test_simulation_setupBoard():
+    sim = simulation.Simulation()
+
+    expected = np.zeros(40)
+    expected[0] = 1
+    expected[8] = 2
+
+    expected[16] = 3
+    expected[24] = 4
+
+    expected[1] = 5
+    expected[9] = 6
+
+    expected[17] = 7
+    expected[25] = 8
+
+    sim.setupBoard(expected)
+
+    stones = list(sim.getStones())
+    print(stones)
+
+    print('Testing setupBoard()')
+    actual = sim.getBoard()
+
+    assert list(actual) == list(expected)
+
+    

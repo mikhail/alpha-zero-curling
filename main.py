@@ -6,17 +6,17 @@ from othello.pytorch.NNet import NNetWrapper as nn
 from utils import *
 
 args = dotdict({
-    'numIters': 10,
-    'numEps': 40,              # Number of complete self-play games to simulate during a new iteration.
-    'tempThreshold': 4,        #
+    'numIters': 1,
+    'numEps': 1,              # Number of complete self-play games to simulate during a new iteration.
+    'tempThreshold': 2,        #
     'updateThreshold': 0.5,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
-    'maxlenOfQueue': 30,    # Number of game examples to train the neural networks.
-    'numMCTSSims': 5,          # Number of games moves for MCTS to simulate.
+    'maxlenOfQueue': 1,    # Number of game examples to train the neural networks.
+    'numMCTSSims': 2,          # Number of games moves for MCTS to simulate.
     'arenaCompare': 2,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 4,
+    'cpuct': 8,
 
     'checkpoint': './temp/',
-    'load_model': True,
+    'load_model': False,
     'load_folder_file': ('./temp/','checkpoint_9.pth.tar'),
     'numItersForTrainExamplesHistory': 1,
 
