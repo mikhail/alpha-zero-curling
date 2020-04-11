@@ -28,8 +28,8 @@ def test_simulation_setupBoard_2():
     board[0] = 0
     board[8] = 0
 
-    board[16] = simulation.INVALID_VALUE
-    board[24] = simulation.INVALID_VALUE
+    board[16] = utils.INVALID_VALUE
+    board[24] = utils.INVALID_VALUE
 
     sim = simulation.Simulation()
     sim.setupBoard(board)
@@ -42,17 +42,17 @@ def test_simulation_getNextStoneId():
     i = simulation.getNextStoneId( sim.getBoard() )
     assert i == 0  # for red
 
-    sim.addStone(simulation.TEAM_1_COLOR, 20, 30)
+    sim.addStone(utils.TEAM_1_COLOR, 20, 30)
 
     i = simulation.getNextStoneId( sim.getBoard() )
     assert i == 0  # for blue
 
-    sim.addStone(simulation.TEAM_2_COLOR, 30, 40)
+    sim.addStone(utils.TEAM_2_COLOR, 30, 40)
 
     i = simulation.getNextStoneId( sim.getBoard() )
     assert i == 1  # for red
 
-    sim.addStone(simulation.TEAM_1_COLOR, 40, 50)
+    sim.addStone(utils.TEAM_1_COLOR, 40, 50)
 
     i = simulation.getNextStoneId( sim.getBoard() )
     assert i == 1  # for blue

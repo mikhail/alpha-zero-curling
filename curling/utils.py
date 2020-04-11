@@ -2,6 +2,9 @@ import math
 
 import pymunk
 
+class FiveRockViolation(Exception):
+    pass
+
 TEAM_1_COLOR = 'red'
 TEAM_2_COLOR = 'blue'
 
@@ -12,15 +15,17 @@ SURFACE_FRICTION = 0.02  # Experimentally picked -- draw weight of 20s
 
 DT = 0.002  # Simulation deltaTime
 
+INVALID_VALUE = 5000
+
 WEIGHT_FT = {
 #    '1': 108,
 #    '2': 112,
     '3': 118,
-#    '4': 120,
-#    '5': 122,
-#    '6': 123,
+    '4': 120,
+    '5': 122,
+    '6': 123,
     '7': 124.5,
-#    '8': 126,
+     '8': 126,
 #    '9': 127,
 #    '10': 129,
 #    'backline': 130,
@@ -41,6 +46,28 @@ ACTION_LIST = tuple(
         for b in BROOMS
 )
 
+
+class Space(pymunk.Space):
+
+    def get_stones(self):
+        return [s for s in self.shapes if type(s) == Stone]
+
+    def get_shooter(self):
+        shooters = [s for s in self.get_stones() if s.is_shooter]
+
+        assert len(shooters) == 1
+
+        return shooters[0]
+
+def getPlayerColor(player):
+    return TEAM_1_COLOR if player == 1 else TEAM_2_COLOR
+
+
+def decodeAction(action):
+    assert action >= 0
+    return ACTION_LIST[action]
+
+
 def dist(inches=0, feet=0, meters=0):
     """Returns value in inches"""
     return (feet * 12) + inches + (meters * 39.3701)
@@ -54,7 +81,7 @@ def toFt(x):
 
 
 def getPlayerColor(player):
-    return sim.TEAM_1_COLOR if player == 1 else sim.TEAM_2_COLOR
+    return TEAM_1_COLOR if player == 1 else TEAM_2_COLOR
 
 class Angle(float):
     def __str__(self):
@@ -104,10 +131,14 @@ def addBoundaries(space):
 
     def remove_stone(arbiter, space, data):
         stone = arbiter.shapes[0]
-        stone.body.position = (5000, 5000)
-        # stone.body.position = (-1,-1)
+
+        if five_rock_rule(stone, space):
+            # mark the shooter as a violator? but we don't have the shooter here
+            # mark THIS stone as "taken out during violation"
+            stone.removed_by_violation = True
+
+        stone.body.position = (INVALID_VALUE, INVALID_VALUE)
         stone.body.velocity = 0,0
-        #space.remove(stone, stone.body)
         return True
 
     space.add_collision_handler(1,2).begin = remove_stone
@@ -122,12 +153,49 @@ def still_moving(shape):
 
 class Stone(pymunk.Circle):
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set to true if stone created in the guard zone. Used for 5-rock rule
+        self.is_guard = False
+
+        # Indicates that this is the stone that will be thrown.
+        self.is_shooter = False
+
+        # Set to true to indicate to the step() caller to undo the board setup
+        self.removed_by_violation = False
+
+
+
     def __repr__(self):
         return (
             f'<Stone {self.id} {self.color} @ ('
             f'{self.body.position.x:n},{self.body.position.y:n}'
             ')>'
             )
+
+    def remove_from_game(self):
+        self.body.position = (INVALID_VALUE, INVALID_VALUE)
+        self.body.velocity = 0,0
+
+    def moving(self):
+        vx = abs(self.body.velocity.x) > 0.01
+        vy = abs(self.body.velocity.y) > 0.01
+        return vx or vy
+
+    def updateGuardValue(self):
+        radius = dist(inches=STONE_RADIUS_IN)
+        hog_line = radius + dist(feet=6 + 6 + 21 + 72)
+        tee_line = hog_line + dist(feet=21)
+        from_pin = euclid(self.body.position, pymunk.Vec2d(0, tee_line))
+
+        y = self.body.position.y
+
+        before_tee = hog_line < y < tee_line
+        not_in_house = from_pin > dist(feet=6) + radius
+
+        self.is_guard = before_tee and not_in_house
+
 
 def newStone(color):
     body = pymunk.Body()
@@ -172,3 +240,18 @@ def getRoundedBoard(board):
 
 def euclid(v1, v2):
     return math.sqrt( ((v1.x-v2.x)**2)+((v1.y-v2.y)**2) )
+
+def five_rock_rule(stone, space):
+    shooter = space.get_shooter()
+
+    if len(space.get_stones()) > 5:
+        return False
+
+    if shooter.color == stone.color:
+        return False
+
+    if stone.is_guard == False:
+        return False
+
+    return True
+

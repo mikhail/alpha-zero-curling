@@ -91,16 +91,17 @@ def test_gameEnded_1():
     assert ended == 0
 
 def test_gameEnded_2():
-    board = np.full(40, simulation.INVALID_VALUE)  # all stones out of the game
+    board = np.full(40, utils.INVALID_VALUE)  # all stones out of the game
 
     curling = game.CurlingGame()
 
     ended = curling.getGameEnded(board, 1)
 
-    assert ended == 0.001
+    assert ended == 0.5  # Draw
 
 def test_gameEnded_3():
-    board = np.full(40, simulation.INVALID_VALUE)  # all stones out of the game
+    board = np.full(40, utils.INVALID_VALUE)  # all stones out of the game
+    # Team 1 is winning
     board[0] = 0
     board[8] = utils.dist(feet=124.5)
 
@@ -108,4 +109,28 @@ def test_gameEnded_3():
 
     ended = curling.getGameEnded(board, 1)
 
-    assert ended == 1
+    assert ended == -0.5
+
+def test_gameEnded_4():
+    board = np.full(40, utils.INVALID_VALUE)  # all stones out of the game
+    # Team 2 is winning
+    board[16] = 0
+    board[24] = utils.dist(feet=124.5)
+
+    curling = game.CurlingGame()
+
+    ended = curling.getGameEnded(board, 1)
+
+    assert ended == -1
+
+def test_gameEnded_5():
+    board = np.full(40, utils.INVALID_VALUE)  # all stones out of the game
+    # Except the hammer
+    board[23] = 0
+    board[31] = 0
+
+    curling = game.CurlingGame()
+
+    ended = curling.getGameEnded(board, 1)
+
+    assert ended == 0

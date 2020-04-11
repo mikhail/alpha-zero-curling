@@ -17,22 +17,23 @@ class dotdict(dict):
     def __getattr__(self, name):
         return self[name]
 
-human_vs_cpu = True
+game = CurlingGame()
 
-g = CurlingGame()
 
-print(g.getBoardSize())
-
-hp = HumanPlayer(g).play
+hp = HumanPlayer(game).play
 
 # nnet players
-n1 = NNet(g)
-n1.load_checkpoint('./temp/', 'best.pth.tar')
+n1 = NNet(game)
+n1.load_checkpoint('./curling/data_345678c/', 'best.pth.tar')
 
-args1 = dotdict({'numMCTSSims': 40, 'cpuct':2.0})
-mcts1 = MCTS(g, n1, args1)
+args1 = dotdict({'numMCTSSims': 5, 'cpuct':2.0})
+mcts1 = MCTS(game, n1, args1)
 n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
 
-arena = Arena.Arena(n1p, hp, g, display=CurlingGame.display)
+
+player1 = hp
+player2 = hp
+
+arena = Arena.Arena(player1, player2, game, display=CurlingGame.display)
 
 print(arena.playGames(2, verbose=True))

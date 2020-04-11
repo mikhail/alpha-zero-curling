@@ -8,8 +8,6 @@ class Game():
 
     See othello/OthelloGame.py for an example implementation.
     """
-    def __init__(self):
-        pass
 
     def getInitBoard(self):
         """
@@ -17,21 +15,21 @@ class Game():
             startBoard: a representation of the board (ideally this is the form
                         that will be the input to your neural network)
         """
-        pass
+        raise NotImplemented()
 
     def getBoardSize(self):
         """
         Returns:
             (x,y): a tuple of board dimensions
         """
-        pass
+        raise NotImplemented()
 
     def getActionSize(self):
         """
         Returns:
             actionSize: number of all possible actions
         """
-        pass
+        raise NotImplemented()
 
     def getNextState(self, board, player, action):
         """
@@ -44,7 +42,7 @@ class Game():
             nextBoard: board after applying action
             nextPlayer: player who plays in the next turn (should be -player)
         """
-        pass
+        raise NotImplemented()
 
     def getValidMoves(self, board, player):
         """
@@ -57,7 +55,7 @@ class Game():
                         moves that are valid from the current board and player,
                         0 for invalid moves
         """
-        pass
+        raise NotImplemented()
 
     def getGameEnded(self, board, player):
         """
@@ -70,7 +68,7 @@ class Game():
                small non-zero value for draw.
                
         """
-        pass
+        raise NotImplemented()
 
     def getCanonicalForm(self, board, player):
         """
@@ -86,7 +84,7 @@ class Game():
                             board as is. When the player is black, we can invert
                             the colors and return the board.
         """
-        pass
+        raise NotImplemented()
 
     def getSymmetries(self, board, pi):
         """
@@ -99,7 +97,7 @@ class Game():
                        form of the board and the corresponding pi vector. This
                        is used when training the neural network from examples.
         """
-        pass
+        raise NotImplemented()
 
     def stringRepresentation(self, board):
         """
@@ -110,4 +108,4 @@ class Game():
             boardString: a quick conversion of board to a string format.
                          Required by MCTS for hashing.
         """
-        pass
+        raise NotImplemented()
