@@ -146,8 +146,8 @@ def addBoundaries(space):
     space.add(w1, w2, w3)
 
 def still_moving(shape):
-    vx = abs(shape.body.velocity.x) > 0.01
-    vy = abs(shape.body.velocity.y) > 0.01
+    vx = abs(shape.body.velocity.x) > 0.001
+    vy = abs(shape.body.velocity.y) > 0.001
     return vx or vy
 
 

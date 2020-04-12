@@ -77,7 +77,6 @@ class CurlingGame(AbstractGameClass):
         house_radius = utils.dist(feet=6, inches=utils.STONE_RADIUS_IN)
 
         # Optimization - don't compute euclid twice
-        # add radius of stone to 6ft measurement
         near_button = sorted(stones, key=lambda s: utils.euclid(s.body.position, button))
         in_house = list(filter(lambda s:  utils.euclid(s.body.position, button) < house_radius, near_button))
 
@@ -92,19 +91,16 @@ class CurlingGame(AbstractGameClass):
 
         hammerWon = (win_color == utils.TEAM_1_COLOR)
 
-        print(f'Win count: {win_count}, color: {win_count}, hammer won: {hammerWon}')
+        # print(f'Win count: {win_count}, color: {win_color}, hammer won: {hammerWon}')
 
         if hammerWon:
             if win_count == 1:
                 # This is almost as bad as losing
-                print('returning -.5')
                 return -0.5
             # 2 or more stones is a great win
-            print(f'returning {win_count}')
             return win_count
 
         # a steal is always good
-        print(f'returning {win_count * -1}')
         return win_count * -1
 
     def getCanonicalForm(self, board, player):

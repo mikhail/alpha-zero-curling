@@ -14,15 +14,15 @@ args = dotdict({
     'numEps': 4,              # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 4,        # Number of moves to "explore" before choosing optimal moves
     'updateThreshold': 0.51,     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
-    'maxlenOfQueue': 100,    # Number of game examples to train the neural networks.
+    'maxlenOfQueue': 1000,    # Number of game examples to train the neural networks.
     'numMCTSSims': 5,          # Number of games moves for MCTS to simulate.
-    'arenaCompare': 2,         # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 1,
+    'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
+    'cpuct': 2,
 
     'checkpoint': './curling/data_5rr/',
     'load_model': False,
-    'load_folder_file': ('./curling/data_345678c/','checkpoint_6.pth.tar'),
-    'numItersForTrainExamplesHistory': 1000,
+    'load_folder_file': ('./curling/data_5rr/','checkpoint_best.pth.tar'),
+    'numItersForTrainExamplesHistory': 10000,
 
 })
 

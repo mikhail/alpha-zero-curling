@@ -155,7 +155,6 @@ class Simulation:
     def run(self, deltaTime=utils.DT): 
         # print(''.join(['🥌'] * len(list(self.getStones()))))
         # print(utils.getRoundedBoard( self.getBoard() ) )
-
         more_changes = True
         last_break = 0
         sim_time = 0
