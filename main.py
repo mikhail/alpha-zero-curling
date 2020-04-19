@@ -19,22 +19,26 @@ args = dotdict({
     'arenaCompare': 1,         # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': 2,
 
-    'checkpoint': './curling/data_5rr/',
+    'checkpoint': './curling/data_image/',
     'load_model': False,
-    'load_folder_file': ('./curling/data_5rr/','checkpoint_best.pth.tar'),
+    'load_folder_file': ('./curling/data_image/','checkpoint_best.pth.tar'),
     'numItersForTrainExamplesHistory': 10000,
 
 })
 
 if __name__ == "__main__":
+    print('Loading Curling...')
     g = CurlingGame()
+    print('Loading nn...')
     nnet = nn(g)
 
     if args.load_model:
+        print('Loading checkpoint...')
         nnet.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
-
+    print('Loading Coach...')
     c = Coach(g, nnet, args)
     if args.load_model:
         print("Load trainExamples from file")
         c.loadTrainExamples()
+    print('Learning...')
     c.learn()

@@ -1,5 +1,8 @@
 import numpy as np
+
+import curling.constants
 from curling import utils
+
 
 class RandomPlayer():
     def __init__(self, game):
@@ -18,19 +21,19 @@ class HumanPlayer():
         self.game = game
 
     def play(self, board):
-        valid_moves = self.game.getValidMoves(board, 1)
+
         while True:
             # print('\nMoves:', [i for (i, valid) in enumerate(valid_moves) if valid])
             print('\n Weight / Handle (-1,1) / Broom:', end=' ')
             move = input()
             weight, handle, broom = move.split(' ')
             try:
-                action = utils.ACTION_LIST.index( (int(handle), weight, int(broom)) )
+                action = curling.constants.ACTION_LIST.index((int(handle), weight, int(broom)))
                 break
             except KeyboardInterrupt:
                 raise
             except:
                 print('Invalid move')
-                print('Weights: ', utils.WEIGHT_FT.keys())
-                print('Brooms: %s - %s' % (min(utils.BROOMS), max(utils.BROOMS)))
+                print('Weights: ', curling.constants.WEIGHT_FT.keys())
+                print('Brooms: %s - %s' % (min(curling.constants.BROOMS), max(curling.constants.BROOMS)))
         return action

@@ -1,53 +1,36 @@
 import math
+import logging
 
+import numpy as np
 import pymunk
 
-class FiveRockViolation(Exception):
+from curling import constants as c
+
+log = logging.getLogger(__name__)
+
+
+class GameException(Exception):
+    """Raise when rules of the game are broken."""
+
+
+class FiveRockViolation(GameException):
     pass
 
-TEAM_1_COLOR = 'red'
-TEAM_2_COLOR = 'blue'
 
-STONE_RADIUS_IN = 5.73
-STONE_MASS = 2  # units don't matter... 1 'stone" weight.
-G_FORCE = 9.81  # In meters
-SURFACE_FRICTION = 0.02  # Experimentally picked -- draw weight of 20s
-
-DT = 0.002  # Simulation deltaTime
-
-INVALID_VALUE = 5000
-
-WEIGHT_FT = {
-#    '1': 108,
-#    '2': 112,
-    '3': 118,
-    '4': 120,
-    '5': 122,
-    '6': 123,
-    '7': 124.5,
-     '8': 126,
-#    '9': 127,
-#    '10': 129,
-#    'backline': 130,
-#    'hack': 136,
-#    'board': 142,
-    'control': 148,
-#    'normal': 154,
-#    'peel': 160
-}
-
-HANDLES = (1, -1)  # rotation velocity
-BROOMS = range(-6,7)
-
-ACTION_LIST = tuple(
-    (h,w,b)
-        for h in HANDLES
-        for w in WEIGHT_FT.keys()
-        for b in BROOMS
-)
+class ShooterNotInGame(GameException):
+    """For when the shooter has already been removed from the game."""
 
 
 class Space(pymunk.Space):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        print('Creating a new space 🎉 ')
+
+        self.five_rock_rule_violation = False
+        self.p1_removed_stones = 0
+        self.p2_removed_stones = 0
+        self.shooter_color = 'Unknown'
 
     def get_stones(self):
         return [s for s in self.shapes if type(s) == Stone]
@@ -55,100 +38,25 @@ class Space(pymunk.Space):
     def get_shooter(self):
         shooters = [s for s in self.get_stones() if s.is_shooter]
 
-        assert len(shooters) == 1
+        if len(shooters) == 1:
+            return shooters[0]
+        if len(shooters) == 0:
+            raise ShooterNotInGame()
 
-        return shooters[0]
+        raise GameException("Found %s shooter stones. Expected 1 or 0." % len(shooters))
 
-def getPlayerColor(player):
-    return TEAM_1_COLOR if player == 1 else TEAM_2_COLOR
+    def get_shooter_color(self):
+        return self.shooter_color
 
+    def remove_stone(self, stone):
+        log.debug("- %s" % stone)
+        team = stone.getTeamId()
+        if team == c.P1:
+            self.p1_removed_stones += 1
+        else:
+            self.p2_removed_stones += 1
 
-def decodeAction(action):
-    assert action >= 0
-    return ACTION_LIST[action]
-
-
-def dist(inches=0, feet=0, meters=0):
-    """Returns value in inches"""
-    return (feet * 12) + inches + (meters * 39.3701)
-
-
-def weight_to_dist(w):
-    return dist(feet=WEIGHT_FT[w.lower()])
-
-def toFt(x):
-    return f'{x/12:3.1f}'
-
-
-def getPlayerColor(player):
-    return TEAM_1_COLOR if player == 1 else TEAM_2_COLOR
-
-class Angle(float):
-    def __str__(self):
-        if str(self.real) == 'nan':
-            return 'x'
-        clocks = '🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚🕛'
-        i = int(-self.real/6.28*12) % 12
-        return clocks[i]
-
-def stone_velocity(body, gravity, damping, dt):
-    F_normal = body.mass * dist(meters=G_FORCE)
-    F_fr = SURFACE_FRICTION * F_normal
-    body.force = body.velocity.normalized() * F_fr * -1
-
-    V_curl = getCurlingVelocity(body) # * dt
-    body.velocity -= V_curl
-
-    pymunk.Body.update_velocity(body, gravity, damping, dt)
-
-def calculateVelocityVector(weight: str, broom: int):
-    F_normal = STONE_MASS * dist(meters=G_FORCE)
-    F_fr = SURFACE_FRICTION * F_normal
-
-    work = weight_to_dist(weight) * F_fr # W = d*F
-    vel = math.sqrt(2.0 * work / STONE_MASS)  # W = v^2 * m * 1/2
-
-    x = dist(feet=broom)
-    y = weight_to_dist(weight)
-    direction = pymunk.Vec2d(x,y).normalized()
-    return direction * vel
-
-def addBoundaries(space):
-    left = dist(feet=-7)
-    right = dist(feet=7)
-    # stones are removed when they exit the actual backline.
-    backline = dist(feet=130) + 2 * dist(inches=STONE_RADIUS_IN)
-
-    w1, w2, w3 = (
-        pymunk.Segment(space.static_body, (left, 0),         (left, backline),  1),
-        pymunk.Segment(space.static_body, (left, backline),  (right, backline), 1),
-        pymunk.Segment(space.static_body, (right, backline), (right, 0),        1)
-    )
-
-    w1.collision_type = 2
-    w2.collision_type = 2
-    w3.collision_type = 2
-
-    def remove_stone(arbiter, space, data):
-        stone = arbiter.shapes[0]
-
-        if five_rock_rule(stone, space):
-            # mark the shooter as a violator? but we don't have the shooter here
-            # mark THIS stone as "taken out during violation"
-            stone.removed_by_violation = True
-
-        stone.body.position = (INVALID_VALUE, INVALID_VALUE)
-        stone.body.velocity = 0,0
-        return True
-
-    space.add_collision_handler(1,2).begin = remove_stone
-
-    space.add(w1, w2, w3)
-
-def still_moving(shape):
-    vx = abs(shape.body.velocity.x) > 0.001
-    vy = abs(shape.body.velocity.y) > 0.001
-    return vx or vy
+        self.remove(stone, stone.body)
 
 
 class Stone(pymunk.Circle):
@@ -162,21 +70,18 @@ class Stone(pymunk.Circle):
         # Indicates that this is the stone that will be thrown.
         self.is_shooter = False
 
-        # Set to true to indicate to the step() caller to undo the board setup
-        self.removed_by_violation = False
-
-
+        self.id = 0
+        self.color = 'unknown'
 
     def __repr__(self):
+        self.updateGuardValue()
+        guard = ' guard' if self.is_guard else ''
+        shooter = ' shooter' if self.moving() else ''
         return (
-            f'<Stone {self.id} {self.color} @ ('
+            f'<Stone {self.id} {self.color}{guard}{shooter} @ ('
             f'{self.body.position.x:n},{self.body.position.y:n}'
             ')>'
-            )
-
-    def remove_from_game(self):
-        self.body.position = (INVALID_VALUE, INVALID_VALUE)
-        self.body.velocity = 0,0
+        )
 
     def moving(self):
         vx = abs(self.body.velocity.x) > 0.01
@@ -184,7 +89,7 @@ class Stone(pymunk.Circle):
         return vx or vy
 
     def updateGuardValue(self):
-        radius = dist(inches=STONE_RADIUS_IN)
+        radius = dist(inches=c.STONE_RADIUS_IN)
         hog_line = radius + dist(feet=6 + 6 + 21 + 72)
         tee_line = hog_line + dist(feet=21)
         from_pin = euclid(self.body.position, pymunk.Vec2d(0, tee_line))
@@ -196,12 +101,127 @@ class Stone(pymunk.Circle):
 
         self.is_guard = before_tee and not_in_house
 
+    def getTeamId(self):
+        return c.P1 if self.color == c.P1_COLOR else c.P2
 
-def newStone(color):
+    def getBoardXY(self):
+        x = self.body.position.x
+        y = self.body.position.y
+        bx, by = realToBoard(x, y)
+
+        assert 0 <= bx <= (ICE_WIDTH * BOARD_RESOLUTION)
+        assert 0 <= by <= (ICE_HEIGHT * BOARD_RESOLUTION)
+        return bx, by
+
+
+def realToBoard(x, y):
+    bx, by = int((x + (ICE_WIDTH / 2.0)) * BOARD_RESOLUTION), int(y * BOARD_RESOLUTION)
+    return bx, by
+
+
+def boardToReal(x, y):
+    real_x = (x / BOARD_RESOLUTION) - ICE_WIDTH / 2.0
+    real_y = y / BOARD_RESOLUTION
+
+    # assert real_x <= ICE_WIDTH
+    # assert real_y <= ICE_HEIGHT
+    return real_x, real_y
+
+
+def decodeAction(action):
+    assert action >= 0
+    return c.ACTION_LIST[action]
+
+
+def dist(inches=0., feet=0., meters=0.):
+    """Returns value in inches"""
+    return (feet * 12.0) + inches + (meters * 39.3701)
+
+
+ICE_WIDTH = dist(feet=14)
+ICE_HEIGHT = dist(feet=130)
+
+BOARD_RESOLUTION = 2  # X pixels per inch.
+
+
+def weight_to_dist(w):
+    return dist(feet=c.WEIGHT_FT[w.lower()])
+
+
+def toFt(x):
+    return f'{x / 12:3.1f}'
+
+
+def getPlayerColor(player):
+    return c.P1_COLOR if player == 1 else c.P2_COLOR
+
+
+def stone_velocity(body, gravity, damping, dt):
+    F_normal = body.mass * dist(meters=c.G_FORCE)
+    F_fr = c.SURFACE_FRICTION * F_normal
+    body.force = body.velocity.normalized() * F_fr * -1
+
+    V_curl = getCurlingVelocity(body)  # * dt
+    body.velocity -= V_curl
+
+    pymunk.Body.update_velocity(body, gravity, damping, dt)
+
+
+def calculateVelocityVector(weight: str, broom: int):
+    F_normal = c.STONE_MASS * dist(meters=c.G_FORCE)
+    F_fr = c.SURFACE_FRICTION * F_normal
+
+    work = weight_to_dist(weight) * F_fr  # W = d*F
+    vel = math.sqrt(2.0 * work / c.STONE_MASS)  # W = v^2 * m * 1/2
+
+    x = dist(feet=broom)
+    y = weight_to_dist(weight)
+    direction = pymunk.Vec2d(x, y).normalized()
+    return direction * vel
+
+
+def addBoundaries(space: Space):
+    left = dist(feet=-7)
+    right = dist(feet=7)
+    # stones are removed when they exit the actual backline.
+    backline = dist(feet=130) + 2 * dist(inches=c.STONE_RADIUS_IN)
+
+    w1, w2, w3 = (
+        pymunk.Segment(space.static_body, (left, 0), (left, backline), 1),
+        pymunk.Segment(space.static_body, (left, backline), (right, backline), 1),
+        pymunk.Segment(space.static_body, (right, backline), (right, 0), 1)
+    )
+
+    w1.collision_type = 2
+    w2.collision_type = 2
+    w3.collision_type = 2
+
+    def remove_stone(arbiter, local_space, data):
+        stone = arbiter.shapes[0]
+
+        if five_rock_rule(stone, local_space):
+            local_space.five_rock_rule_violation = True
+            return False
+        local_space.remove_stone(stone)
+
+        return True
+
+    space.add_collision_handler(1, 2).begin = remove_stone
+
+    space.add(w1, w2, w3)
+
+
+def still_moving(shape):
+    vx = abs(shape.body.velocity.x) > 0.001
+    vy = abs(shape.body.velocity.y) > 0.001
+    return vx or vy
+
+
+def newStone(color: str):
     body = pymunk.Body()
     body.velocity_func = stone_velocity
-    stone = Stone(body, dist(inches=STONE_RADIUS_IN))
-    stone.mass = STONE_MASS
+    stone = Stone(body, dist(inches=c.STONE_RADIUS_IN))
+    stone.mass = c.STONE_MASS
     stone.color = color
     stone.friction = 1.004  # interaction with other objects, not with "ice"
     stone.density = 1
@@ -211,12 +231,11 @@ def newStone(color):
     return stone
 
 
-def sqGauss(x: float, m = 1, o = 0, em = 1, eo = 0):
+def sqGauss(x: float, m=1., o=0., em=1., eo=0.):
     return (x * m + o) * math.exp(-(math.pow(x, 2) * em + eo))
 
 
 def getCurlingVelocity(body):
-
     # numbers taken from index.ts but adjusted to work. Unknown discrepancy
     # Adjustments made to curl 6ft on tee-line draw.
 
@@ -225,29 +244,33 @@ def getCurlingVelocity(body):
     # using 008 instead of 005 also don't know why
     curlFromSpeed = sqGauss(speed, 0.008, 0, 0.2, 1.5)
 
-    curl_effect = 1;
+    curl_effect = 1
     if abs(body.angular_velocity) < 0.01:
-        curl_effect = 0;
+        curl_effect = 0
 
     direction = 90 if body.angular_velocity < 0 else -90
     curlVector = body.velocity.normalized() * curlFromSpeed * curl_effect
     curlVector.rotate_degrees(direction)
 
-    return curlVector;
+    return curlVector
 
-def getRoundedBoard(board):
-    return [round(v, 2) for v in board]
+
+def getBoardRepr(board):
+    team1 = np.argwhere(board == c.P1)
+    team2 = np.argwhere(board == c.P2)
+    return '1:' + str(team1.tolist()) + ':2:' + str(team2.tolist()) + ':d:' + str(board[-1][0:16].astype(int).tolist())
+
 
 def euclid(v1, v2):
-    return math.sqrt( ((v1.x-v2.x)**2)+((v1.y-v2.y)**2) )
+    return math.sqrt(((v1.x - v2.x) ** 2) + ((v1.y - v2.y) ** 2))
+
 
 def five_rock_rule(stone, space):
-    shooter = space.get_shooter()
-
     if len(space.get_stones()) > 5:
         return False
 
-    if shooter.color == stone.color:
+    shooter_color = space.get_shooter_color()
+    if shooter_color == stone.color:
         return False
 
     if stone.is_guard == False:
@@ -255,3 +278,45 @@ def five_rock_rule(stone, space):
 
     return True
 
+
+def getInitBoard():
+    board = np.zeros(getBoardSize(), int)
+    board[-1][0:8] = [c.P1_NOT_THROWN] * 8
+    board[-1][8:16] = [c.P2_NOT_THROWN] * 8
+
+    return board
+
+
+def getBoardSize() -> (int, int):
+    stone_height = dist(inches=c.STONE_RADIUS_IN * 2)
+
+    width_px = int(ICE_WIDTH * BOARD_RESOLUTION)
+    height_px = int((ICE_HEIGHT + stone_height) * BOARD_RESOLUTION)
+
+    data_layer = 1  # 1 entire row is dedicated to keep track of data (stones thrown/out of play)
+    return width_px, height_px + data_layer
+
+
+def getNextPlayer(board, player=c.P1):
+    data_row = board[-1]
+
+    # 0 = empty ice
+
+    # 1 = player 1 stone in play
+    # 2 = player 1 stone not thrown yet
+    # 3 = player 1 stone out of play
+
+    # -1 = player 2 stone in play
+    # -2 = player 2 stone not thrown yet
+    # -3 = player 2 stone out of play
+
+    # data row begins with 22222222 -2-2-2-2-2-2-2-2
+
+    for i in range(8):  # Check 8 stones
+        if data_row[i] == c.P1_NOT_THROWN:
+            return 1
+
+        if data_row[i + 8] == c.P2_NOT_THROWN:
+            return -1
+
+    raise GameException("It is nobody's turn. Player: %s Data row: %s" % (player, data_row[0:16]))

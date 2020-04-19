@@ -1,84 +1,66 @@
+import logging
 import numpy as np
-import sys
-
-sys.path.append('..')
-from Game import Game as AbstractGameClass
 
 from curling import simulation
 from curling import utils
+from curling import constants as c
 
-def getNextPlayer(board):
+log = logging.getLogger(__name__)
 
-    last_p1 = 0
-    for y in range(8,16):
-        if board[y] > 0:
-            last_p1 = y - 7
-
-    last_p2 = 0
-    for y in range(24,32):
-        if board[y] > 0:
-            last_p2 = y - 23
-
-    if last_p1 > last_p2:
-        return -1
-
-    return 1
+BUTTON_POSITION = utils.pymunk.Vec2d(0, utils.dist(feet=124.5))  # TODO: MOVE IT OUT OF HERE
 
 
-class CurlingGame(AbstractGameClass):
+class CurlingGame:
 
     def __init__(self):
-        AbstractGameClass.__init__(self)
-        self.sim = simulation.Simulation()
+        self.sim = simulation.Simulation(self.getBoardSize())
 
     def getInitBoard(self):
-        # x = 0 means center line. view from thrower. -6 means Skip's right
-        size = self.getBoardSize()
-        b = np.zeros(size[0] * size[1])
-        return b
+        return utils.getInitBoard()
 
     def getBoardSize(self):
-        # 2: x and y coordinates. 16: total stones.
-        # index 0 will be x for team 1
-        # index 1 will be y for team 1
-        # index 2 will be x for team 2
-        # index 3 will be y for team 2
-        # index 4: not used
-        return (5, 8)
+        board_size = utils.getBoardSize()
+        assert board_size[0] >= 16  # need at least this size for data
+        return board_size
 
     def getActionSize(self):
-        return len(utils.ACTION_LIST)
+        return len(c.ACTION_LIST)
 
     def getNextState(self, board, player, action):
+        log.debug(f'getNextState(board, {player}, {action})')
         self.sim.setupBoard(board)
         self.sim.setupAction(player, action)
         self.sim.run()
 
         next_board = self.sim.getBoard()
         next_player = 0 - player
-
+        log.debug(f'  return board, {next_player}')
         return next_board, next_player
 
     def getValidMoves(self, board, player):
-        player_turn = getNextPlayer(board)
+
+        if self.thrownStones(board) >= 16:
+            print('WARNING: getValidMoves() requested at game end.')
+            return [0] * self.getActionSize()
+
+        player_turn = utils.getNextPlayer(board, player)
         if player_turn == player:
             return [1] * self.getActionSize()  # all moves are valid
 
         return [0] * self.getActionSize()
 
     def getGameEnded(self, board, player):
-        if board[31] < 1:
+        if self.thrownStones(board) < 16:
             return 0
 
         self.sim.setupBoard(board)
+
+        house_radius = utils.dist(feet=6, inches=c.STONE_RADIUS_IN)
         stones = self.sim.getStones()
 
-        button = utils.pymunk.Vec2d(0, utils.dist(feet=124.5))
-        house_radius = utils.dist(feet=6, inches=utils.STONE_RADIUS_IN)
-
-        # Optimization - don't compute euclid twice
-        near_button = sorted(stones, key=lambda s: utils.euclid(s.body.position, button))
-        in_house = list(filter(lambda s:  utils.euclid(s.body.position, button) < house_radius, near_button))
+        # TODO: Optimization - don't compute euclid twice
+        near_button = sorted(stones, key=lambda s: utils.euclid(s.body.position, BUTTON_POSITION))
+        in_house = list(filter(lambda s: utils.euclid(s.body.position, BUTTON_POSITION) < house_radius, near_button))
 
         if len(in_house) == 0:
             # Draw is better than being forced to 1
@@ -89,11 +71,11 @@ class CurlingGame(AbstractGameClass):
         while len(in_house) > win_count and in_house[win_count].color == win_color:
             win_count += 1
 
-        hammerWon = (win_color == utils.TEAM_1_COLOR)
+        hammer_won = (win_color == c.P2_COLOR)
 
-        # print(f'Win count: {win_count}, color: {win_color}, hammer won: {hammerWon}')
+        # print(f'Win count: {win_count}, color: {win_color}, hammer won: {hammer_won}')
 
-        if hammerWon:
+        if hammer_won:
             if win_count == 1:
                 # This is almost as bad as losing
                 return -0.5
@@ -103,37 +85,46 @@ class CurlingGame(AbstractGameClass):
         # a steal is always good
         return win_count * -1
 
-    def getCanonicalForm(self, board, player):
-        if player == 1:
+    def thrownStones(self, board):
+        stones = self.sim.getStones()
+        data_row = board[-1][0:16]
+        p1_oop = len(np.argwhere(data_row == c.P1_OUT_OF_PLAY))
+        p2_oop = len(np.argwhere(data_row == c.P2_OUT_OF_PLAY))
+        thrown_stones = len(stones) + p1_oop + p2_oop
+        log.debug(f'getGameEnded() -> {thrown_stones}')
+        return thrown_stones
+
+    @staticmethod
+    def getCanonicalForm(board, player):
+        log.debug(f'getCanonicalForm({board[-1][0:16]}, {player})')
+        if player == c.P1:
+            log.debug(f'getCanonicalForm(board, {player}) -> {board[-1][0:16]}')
             return board
 
-        switched_board = self.getInitBoard()
-        switched_board[0:16] = board[16:32]
-        switched_board[16:32] = board[0:16]
-        # switched_board[0] = board[2]
-        # switched_board[1] = board[3]
+        flip = board * -1
 
-        return switched_board
+        # Data row remains the same
+        flip[-1][0:8] = (board[-1][8:16] * -1)
+        flip[-1][8:16] = (board[-1][0:8] * -1)
+        log.debug(f'getCanonicalForm(board, {player}) -> {flip[-1][0:16]}')
+        return flip
 
-
-    def getSymmetries(self, board, pi):
+    @staticmethod
+    def getSymmetries(board, pi):
         # TODO: this can be flipped over y axis
-        # all same-color stones can have full permutation
         return [(board, pi)]
 
-    def stringRepresentation(self, board):
-        return str(utils.getRoundedBoard(board))
+    @staticmethod
+    def stringRepresentation(board):
+        return str(utils.getBoardRepr(board))
 
     @staticmethod
     def display(board):
         print(" -----------------------")
-        print([f'{p:2.2f}' for p in board[0:8]])
-        print([f'{p:2.2f}' for p in board[8:16]])
-        print([f'{p:2.2f}' for p in board[16:24]])
-        print([f'{p:2.2f}' for p in board[24:32]])
+        print(list(np.argwhere(board == c.P1)))
+        print(list(np.argwhere(board == c.P2)))
         print(" -----------------------")
-        print(getUrl(board))
-        print(" -----------------------")
+
 
 # url: left 0 right: 396
 # pymunk: left: -84 right: 84
@@ -142,25 +133,30 @@ class CurlingGame(AbstractGameClass):
 # pymunk: top 12: 1416.0 back 12: 1560.0
 
 
-
 def url_to_x(x):
     v = float(x) * 0.424 - 84
-    return str ( int(v * 100) / 100 )
+    return str(int(v * 100) / 100)
+
+
 def url_to_y(y):
     v = float(y) * 0.462 + 1232
-    return str ( int(v * 100) / 100 )
+    return str(int(v * 100) / 100)
+
 
 def x_to_url(x):
     v = (float(x) + 84) / 0.424
-    return str ( int(v * 100) / 100 )
+    return str(int(v * 100) / 100)
+
+
 def y_to_url(y):
     v = (float(y) - 1232) / 0.462
-    return str ( int(v * 100) / 100 )
+    return str(int(v * 100) / 100)
+
 
 def getUrl(board):
     team1 = zip(board[0:8], board[8:16])
     team2 = zip(board[16:24], board[24:32])
     return (
-            'blue=' + '|'.join(x_to_url(x) + ',' + y_to_url(y) for x,y in team2 if 1 < float(y) < 2000) +
-            '&red=' + '|'.join(x_to_url(x) + ',' + y_to_url(y) for x,y in team1 if 1 < float(y) < 2000)
-            )
+            'blue=' + '|'.join(x_to_url(x) + ',' + y_to_url(y) for x, y in team2 if 1 < float(y) < 2000) +
+            '&red=' + '|'.join(x_to_url(x) + ',' + y_to_url(y) for x, y in team1 if 1 < float(y) < 2000)
+    )

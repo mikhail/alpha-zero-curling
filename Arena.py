@@ -43,12 +43,12 @@ class Arena():
         while self.game.getGameEnded(board, curPlayer)==0:
             it+=1
             if verbose:
-                assert(self.display)
+                assert self.display
                 print("Turn", str(it), "Player", curPlayer)
                 self.display(board)
             action = players[curPlayer+1](self.game.getCanonicalForm(board, curPlayer))
 
-            valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer),1)
+            valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer), 1)
 
             if valids[action] == 0:
                 print(action)
@@ -76,7 +76,6 @@ class Arena():
             draws:  games won by nobody
         """
         half = int(num/2)
-        gameResult = 0
         p1_score = 0
         p2_score = 0
         for _ in tqdm(range(half), desc="Arena.playGames p1/p2"):
