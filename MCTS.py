@@ -2,6 +2,8 @@ import math
 import numpy as np
 from tqdm import tqdm
 
+tqdm.monitor_interval = 0
+
 EPS = 1e-8
 
 

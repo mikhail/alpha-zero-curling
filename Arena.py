@@ -1,7 +1,11 @@
+import math
 import time
 
 from tqdm import tqdm
 import numpy as np
+
+tqdm.monitor_interval = 0
+
 
 class Arena():
     """
@@ -75,10 +79,9 @@ class Arena():
             twoWon: games won by player2
             draws:  games won by nobody
         """
-        half = int(num/2)
         p1_score = 0
         p2_score = 0
-        for _ in tqdm(range(half), desc="Arena.playGames p1/p2"):
+        for _ in tqdm(range(math.ceil(num/2)), desc="Arena.playGames p1/p2"):
             res = self.playGame(verbose=verbose)
             print(f'This game: {res}')
             if res > 0:
@@ -88,7 +91,7 @@ class Arena():
 
         self.player1, self.player2 = self.player2, self.player1
         
-        for _ in tqdm(range(half), desc="Arena.playGames p2/p1"):
+        for _ in tqdm(range(math.floor(num/2)), desc="Arena.playGames p2/p1"):
             res = self.playGame(verbose=verbose)
             print(f'This game: {-res}')
             if res > 0:

@@ -9,6 +9,7 @@ import numpy as np
 from Arena import Arena
 from MCTS import MCTS
 
+tqdm.monitor_interval = 0
 
 class Coach():
     """

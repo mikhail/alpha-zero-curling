@@ -117,7 +117,7 @@ HOG_LINE = ICE_LENGTH - BOX_SIZE
 
 
 def realToBoard(x, y) -> (int, int):
-    bx, by = round((x + (ICE_WIDTH / 2.0)) * c.BOARD_RESOLUTION), round((y - HOG_LINE) * c.BOARD_RESOLUTION)
+    bx, by = math.floor((x + (ICE_WIDTH / 2.0)) * c.BOARD_RESOLUTION), math.floor((y - HOG_LINE) * c.BOARD_RESOLUTION)
     return bx, by
 
 

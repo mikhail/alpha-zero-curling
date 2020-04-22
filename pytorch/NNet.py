@@ -21,6 +21,8 @@ from torchvision import datasets, transforms
 
 from .OthelloNNet import OthelloNNet as onnet
 
+tqdm.monitor_interval = 0
+
 args = dotdict({
     'lr': 0.001,
     'dropout': 0.3,
