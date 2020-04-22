@@ -5,7 +5,7 @@ from typing import List
 import numpy as np
 
 from curling import constants as c
-from . import utils
+from curling import utils
 
 log = logging.getLogger(__name__)
 
@@ -129,7 +129,7 @@ class Simulation:
         board[-1][8:self.space.p2_removed_stones + 8] = [c.P2_OUT_OF_PLAY] * self.space.p2_removed_stones
 
         for stone in all_stones:
-            x, y = stone.getBoardXY()
+            x, y = utils.realToBoard(stone.body.position.x, stone.body.position.y)
             team_id = stone.getTeamId()
 
             board[x][y] = team_id

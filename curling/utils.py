@@ -1,5 +1,5 @@
-import math
 import logging
+import math
 
 import numpy as np
 import pymunk
@@ -11,10 +11,6 @@ log = logging.getLogger(__name__)
 
 class GameException(Exception):
     """Raise when rules of the game are broken."""
-
-
-class FiveRockViolation(GameException):
-    pass
 
 
 class ShooterNotInGame(GameException):
@@ -34,6 +30,9 @@ class Space(pymunk.Space):
 
     def get_stones(self):
         return [s for s in self.shapes if type(s) == Stone]
+
+    def thrownStonesCount(self):
+        return len(self.get_stones()) + self.p1_removed_stones + self.p2_removed_stones
 
     def get_shooter(self):
         shooters = [s for s in self.get_stones() if s.is_shooter]
@@ -96,41 +95,13 @@ class Stone(pymunk.Circle):
 
         y = self.body.position.y
 
-        before_tee = hog_line < y < tee_line
-        not_in_house = from_pin > dist(feet=6) + radius
+        before_tee = y < tee_line
+        not_in_house = from_pin > dist(feet=6) + dist(inches=c.STONE_RADIUS_IN)
 
         self.is_guard = before_tee and not_in_house
 
     def getTeamId(self):
         return c.P1 if self.color == c.P1_COLOR else c.P2
-
-    def getBoardXY(self):
-        x = self.body.position.x
-        y = self.body.position.y
-        bx, by = realToBoard(x, y)
-
-        assert 0 <= bx <= (ICE_WIDTH * BOARD_RESOLUTION)
-        assert 0 <= by <= (ICE_HEIGHT * BOARD_RESOLUTION)
-        return bx, by
-
-
-def realToBoard(x, y):
-    bx, by = int((x + (ICE_WIDTH / 2.0)) * BOARD_RESOLUTION), int(y * BOARD_RESOLUTION)
-    return bx, by
-
-
-def boardToReal(x, y):
-    real_x = (x / BOARD_RESOLUTION) - ICE_WIDTH / 2.0
-    real_y = y / BOARD_RESOLUTION
-
-    # assert real_x <= ICE_WIDTH
-    # assert real_y <= ICE_HEIGHT
-    return real_x, real_y
-
-
-def decodeAction(action):
-    assert action >= 0
-    return c.ACTION_LIST[action]
 
 
 def dist(inches=0., feet=0., meters=0.):
@@ -139,9 +110,27 @@ def dist(inches=0., feet=0., meters=0.):
 
 
 ICE_WIDTH = dist(feet=14)
-ICE_HEIGHT = dist(feet=130)
+# TODO: FIXME: XXX: NOTE: Why the hell is this 130? Either 132 (including hack) or 126 (back to back)
+ICE_LENGTH = dist(feet=130)
+BOX_SIZE = dist(feet=27)
+HOG_LINE = ICE_LENGTH - BOX_SIZE
 
-BOARD_RESOLUTION = 2  # X pixels per inch.
+
+def realToBoard(x, y) -> (int, int):
+    bx, by = round((x + (ICE_WIDTH / 2.0)) * c.BOARD_RESOLUTION), round((y - HOG_LINE) * c.BOARD_RESOLUTION)
+    return bx, by
+
+
+def boardToReal(x, y):
+    real_x = (x / c.BOARD_RESOLUTION) - ICE_WIDTH / 2.0
+    real_y = (y / c.BOARD_RESOLUTION) + HOG_LINE
+
+    return real_x, real_y
+
+
+def decodeAction(action):
+    assert action >= 0
+    return c.ACTION_LIST[action]
 
 
 def weight_to_dist(w):
@@ -265,15 +254,15 @@ def euclid(v1, v2):
     return math.sqrt(((v1.x - v2.x) ** 2) + ((v1.y - v2.y) ** 2))
 
 
-def five_rock_rule(stone, space):
-    if len(space.get_stones()) > 5:
+def five_rock_rule(stone, space: Space):
+    total_stones = space.thrownStonesCount()
+    if total_stones > 5:
         return False
 
-    shooter_color = space.get_shooter_color()
-    if shooter_color == stone.color:
+    if stone.color == space.get_shooter_color():
         return False
 
-    if stone.is_guard == False:
+    if not stone.is_guard:
         return False
 
     return True
@@ -288,10 +277,8 @@ def getInitBoard():
 
 
 def getBoardSize() -> (int, int):
-    stone_height = dist(inches=c.STONE_RADIUS_IN * 2)
-
-    width_px = int(ICE_WIDTH * BOARD_RESOLUTION)
-    height_px = int((ICE_HEIGHT + stone_height) * BOARD_RESOLUTION)
+    width_px = int(ICE_WIDTH * c.BOARD_RESOLUTION)
+    height_px = int(BOX_SIZE * c.BOARD_RESOLUTION)
 
     data_layer = 1  # 1 entire row is dedicated to keep track of data (stones thrown/out of play)
     return width_px, height_px + data_layer

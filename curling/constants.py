@@ -41,3 +41,4 @@ ACTION_LIST = tuple(
     for w in WEIGHT_FT.keys()
     for b in BROOMS
 )
+BOARD_RESOLUTION = 0.1  # X pixels per inch.

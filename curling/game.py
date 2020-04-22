@@ -39,7 +39,7 @@ class CurlingGame:
 
     def getValidMoves(self, board, player):
 
-        if self.thrownStones(board) >= 16:
+        if self._thrownStones(board) >= 16:
             print('WARNING: getValidMoves() requested at game end.')
             return [0] * self.getActionSize()
 
@@ -50,7 +50,7 @@ class CurlingGame:
         return [0] * self.getActionSize()
 
     def getGameEnded(self, board, player):
-        if self.thrownStones(board) < 16:
+        if self._thrownStones(board) < 16:
             return 0
 
         self.sim.setupBoard(board)
@@ -85,7 +85,7 @@ class CurlingGame:
         # a steal is always good
         return win_count * -1
 
-    def thrownStones(self, board):
+    def _thrownStones(self, board):
         stones = self.sim.getStones()
         data_row = board[-1][0:16]
         p1_oop = len(np.argwhere(data_row == c.P1_OUT_OF_PLAY))

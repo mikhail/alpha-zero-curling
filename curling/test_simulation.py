@@ -54,17 +54,17 @@ def test_simulation_getNextStoneId():
     i = simulation.getNextStoneId(curl.sim.getBoard())
     assert i == 0  # for red
 
-    curl.sim.addStone(c.P1_COLOR, 20, 30)
+    curl.sim.addStone(c.P1_COLOR, 0, utils.HOG_LINE)
 
     i = simulation.getNextStoneId(curl.sim.getBoard())
     assert i == 8  # for blue
 
-    curl.sim.addStone(c.P2_COLOR, 30, 40)
+    curl.sim.addStone(c.P2_COLOR, 1, utils.HOG_LINE)
 
     i = simulation.getNextStoneId(curl.sim.getBoard())
     assert i == 1  # for red
 
-    curl.sim.addStone(c.P1_COLOR, 40, 50)
+    curl.sim.addStone(c.P1_COLOR, 2, utils.HOG_LINE)
 
     i = simulation.getNextStoneId(curl.sim.getBoard())
     assert i == 9  # for blue
