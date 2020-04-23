@@ -75,7 +75,7 @@ class Stone(pymunk.Circle):
 
     def __repr__(self):
         self.updateGuardValue()
-        guard = ' guard' if self.is_guard else ''
+        guard = ' guard' if self.is_guard and not self.moving() else ''
         shooter = ' shooter' if self.moving() else ''
         return (
             f'<Stone {self.id} {self.color}{guard}{shooter} @ ('

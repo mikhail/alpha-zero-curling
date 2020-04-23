@@ -1,9 +1,10 @@
 import logging
+
 import numpy as np
 
+from curling import constants as c
 from curling import simulation
 from curling import utils
-from curling import constants as c
 
 log = logging.getLogger(__name__)
 
@@ -38,11 +39,12 @@ class CurlingGame:
         return next_board, next_player
 
     def getValidMoves(self, board, player):
+        data_row = board[-1][0:16]
 
-        if self._thrownStones(board) >= 16:
-            data_row = board[-1][0:16]
-            log.warning('getValidMoves() requested at game end. Data: %s' % data_row)
-            return [0] * self.getActionSize()
+        if self._thrownStones(data_row) >= 16:
+            log.error('getValidMoves() requested at game end. Data: %s' % data_row)
+            log.error('Board: strRepr' + self.stringRepresentation(board))
+            raise utils.GameException('getValidMoves requested after game end.')
 
         player_turn = utils.getNextPlayer(board, player)
         if player_turn == player:
@@ -51,10 +53,10 @@ class CurlingGame:
         return [0] * self.getActionSize()
 
     def getGameEnded(self, board, player):
-        if self._thrownStones(board) < 16:
-            return 0
-
         self.sim.setupBoard(board)
+        data_row = board[-1][0:16]
+        if self._thrownStones(data_row) < 16:
+            return 0
 
         house_radius = utils.dist(feet=6, inches=c.STONE_RADIUS_IN)
         stones = self.sim.getStones()
@@ -68,13 +70,14 @@ class CurlingGame:
             return 0.5
 
         win_color = in_house[0].color
-        win_count = 0
+        win_count = 0  # add test
         while len(in_house) > win_count and in_house[win_count].color == win_color:
             win_count += 1
 
         hammer_won = (win_color == c.P2_COLOR)
 
         log.debug(f'Win count: {win_count}, color: {win_color}, hammer won: {hammer_won}')
+        assert win_count > 0
 
         if hammer_won:
             if win_count == 1:
@@ -86,13 +89,12 @@ class CurlingGame:
         # a steal is always good
         return win_count * -1
 
-    def _thrownStones(self, board):
+    def _thrownStones(self, data_row):
         stones = self.sim.getStones()
-        data_row = board[-1][0:16]
         p1_oop = len(np.argwhere(data_row == c.P1_OUT_OF_PLAY))
         p2_oop = len(np.argwhere(data_row == c.P2_OUT_OF_PLAY))
         thrown_stones = len(stones) + p1_oop + p2_oop
-        log.debug(f'getGameEnded() -> {thrown_stones}')
+        log.debug(f'thrownStones() -> {thrown_stones}')
         return thrown_stones
 
     @staticmethod

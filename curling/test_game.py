@@ -1,9 +1,9 @@
 import numpy as np
 
 import curling.utils
+from . import constants as c
 from . import game
 from . import utils
-from . import constants as c
 
 
 def test_board_is_2d():
@@ -12,7 +12,6 @@ def test_board_is_2d():
     width, height = board.shape
     assert width >= 16  # Minimum for data row
     assert height > width  # just sanity check
-
 
 
 def test_getNextPlayer_0():
@@ -207,7 +206,7 @@ def test_gameEnded_SlightlyOffCenter_x_1():
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == -0.5, (np.argwhere(board == c.P2), (x,y), stone.body.position)
+    assert ended == -0.5, (np.argwhere(board == c.P2), (x, y), stone.body.position)
 
 
 def test_gameEnded_SlightlyOffCenter_x_2():
@@ -283,6 +282,23 @@ def test_gameEnded_NotEndOfGame():
     ended = curl.getGameEnded(board, 1)
 
     assert ended == 0
+
+
+def test_gameEnded_edgeCase():
+    # Ensure the board is setup/reset before counting the stones
+    # This edge case is when a game goes in "reverse" because of MCTS
+
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+    board[-1][0:7] = [3] * 7
+    board[-1][8:16] = [-3] * 8
+
+    assert curl.getGameEnded(board, 1) == 0
+
+    board[-1][7] = 2
+    board[2][2] = 1
+
+    assert curl.getGameEnded(board, 1) != 0
 
 
 def test_display():

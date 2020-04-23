@@ -1,8 +1,6 @@
 import math
-import time
 
 from tqdm import tqdm
-import numpy as np
 
 tqdm.monitor_interval = 0
 
@@ -11,6 +9,7 @@ class Arena():
     """
     An Arena class where any 2 agents can be pit against each other.
     """
+
     def __init__(self, player1, player2, game, display=None):
         """
         Input:
@@ -44,13 +43,13 @@ class Arena():
         total_moves = 16  # Curling
         progressbar = tqdm(total=total_moves)
         it = 0
-        while self.game.getGameEnded(board, curPlayer)==0:
-            it+=1
+        while self.game.getGameEnded(board, curPlayer) == 0:
+            it += 1
             if verbose:
                 assert self.display
                 print("Turn", str(it), "Player", curPlayer)
                 self.display(board)
-            action = players[curPlayer+1](self.game.getCanonicalForm(board, curPlayer))
+            action = players[curPlayer + 1](self.game.getCanonicalForm(board, curPlayer))
 
             valids = self.game.getValidMoves(self.game.getCanonicalForm(board, curPlayer), 1)
 
@@ -64,10 +63,10 @@ class Arena():
             board, curPlayer = self.game.getNextState(board, curPlayer, action)
             progressbar.update()
         if verbose:
-            assert(self.display)
+            assert (self.display)
             print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, 1)))
             self.display(board)
-        return curPlayer*self.game.getGameEnded(board, curPlayer)
+        return curPlayer * self.game.getGameEnded(board, curPlayer)
 
     def playGames(self, num, verbose=False):
         """
@@ -81,17 +80,21 @@ class Arena():
         """
         p1_score = 0
         p2_score = 0
-        for _ in tqdm(range(math.ceil(num/2)), desc="Arena.playGames p1/p2"):
+        for _ in tqdm(range(math.ceil(num / 2)), desc="Arena.playGames p1/p2"):
             res = self.playGame(verbose=verbose)
+            if res == 0:
+                raise Exception('WHOA playGame ended before end of game. res=%s' % res)
             if res > 0:
                 p1_score += res
             else:
                 p2_score -= res
 
         self.player1, self.player2 = self.player2, self.player1
-        
-        for _ in tqdm(range(math.floor(num/2)), desc="Arena.playGames p2/p1"):
+
+        for _ in tqdm(range(math.floor(num / 2)), desc="Arena.playGames p2/p1"):
             res = self.playGame(verbose=verbose)
+            if res == 0:
+                raise Exception('WHOA playGame ended before end of game. res=%s' % res)
             if res > 0:
                 p2_score += res
             else:
