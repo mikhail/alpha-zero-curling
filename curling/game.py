@@ -39,6 +39,8 @@ class CurlingGame:
         return next_board, next_player
 
     def getValidMoves(self, board, player):
+        self.sim.setupBoard(board)
+
         data_row = board[-1][0:16]
 
         if self._thrownStones(data_row) >= 16:
