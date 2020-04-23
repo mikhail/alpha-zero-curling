@@ -23,7 +23,6 @@ class HumanPlayer():
     def play(self, board):
 
         while True:
-            # print('\nMoves:', [i for (i, valid) in enumerate(valid_moves) if valid])
             print('\n Weight / Handle (-1,1) / Broom:', end=' ')
             move = input()
             weight, handle, broom = move.split(' ')

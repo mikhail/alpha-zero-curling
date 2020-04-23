@@ -1,3 +1,4 @@
+import logging
 from collections import deque
 import random
 import time, os, sys
@@ -9,7 +10,10 @@ import numpy as np
 from Arena import Arena
 from MCTS import MCTS
 
+log = logging.getLogger(__name__)
+
 tqdm.monitor_interval = 0
+
 
 class Coach():
     """
@@ -83,7 +87,7 @@ class Coach():
             if not self.skipFirstSelfPlay or i > 1:
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
-                for eps in tqdm(range(self.args.numEps), desc="Self Play"):
+                for _ in tqdm(range(self.args.numEps), desc="Self Play"):
                     self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
                     iterationTrainExamples += self.executeEpisode()
 
@@ -118,7 +122,10 @@ class Coach():
                           lambda x: np.argmax(nmcts.getActionProb(x, temp=0)), self.game)
             pwins, nwins = arena.playGames(self.args.arenaCompare)
 
-            print(f'Results (prev/new): {pwins} / {nwins}')
+            print()
+            print('Results')
+            print(f'Won: {nwins}')
+            print(f'Lost: {pwins}')
             if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.updateThreshold:
                 print('REJECTING NEW MODEL')
             else:

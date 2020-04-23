@@ -24,6 +24,7 @@ def getNextStoneId(board):
         if data_row[i] == c.P1_NOT_THROWN: return i
         if data_row[i + 8] == c.P2_NOT_THROWN: return i + 8
 
+    # 3  3  3  3  3  0  0  0 -3 -3 -3 -3 -3 -3 -3 -3
     raise SimulationException('Id requested for 9th rock. Data row: %s' % data_row)
 
 
@@ -43,10 +44,6 @@ class Simulation:
 
         self.resetBoard()
         self.board_before_action = self.getBoard()
-
-    def print(self, *args, **kwargs):
-        if self.debug:
-            print(*args, **kwargs)
 
     def setupBoard(self, new_board):
         self.resetBoard()
@@ -83,11 +80,10 @@ class Simulation:
             stone.body.velocity = utils.calculateVelocityVector(weight, broom)
             stone.is_shooter = True
 
-            self.print(f'Setting HWB: {handle, weight, broom}')
-            self.print(f'Velocity: {stone.body.velocity}')
+            log.debug(f'Setting HWB: {handle, weight, broom}')
+            log.debug(f'Velocity: {stone.body.velocity}')
 
         log.debug("+ %s" % stone)
-        self.print('Adding stone')
         self.space.add(stone.body, stone)
         return stone
 
@@ -103,9 +99,9 @@ class Simulation:
             if stone.is_shooter:
                 return stone
 
-        print()
-        print(self.getBoard())
-        print()
+        log.debug('')
+        log.debug(self.getBoard())
+        log.debug('')
         raise ShooterNotFound()
 
     def addShooterAsInvalid(self):
@@ -165,31 +161,31 @@ class Simulation:
                 return
             more_changes = False
             if sim_time - last_break > .2:
-                self.print(f"{sim_time:2.0f}s ", end='')
+                log.debug(f"{sim_time:2.0f}s ", end='')
                 last_break = sim_time
                 for stone in self.getStones():
                     # pos = stone.body.position
-                    self.print(
+                    log.debug(
                         f"Stone("
                         f"{stone.color}, "
                         # f"x={utils.toFt(pos.x)}ft, y={utils.toFt(pos.y)}ft, "
                         # f"v={stone.body.velocity.length:3.0f}, "
                         # f"a={utils.Angle(stone.body.angle)})"
                         , end=' ')
-                self.print('', end="\r")
+                log.debug('', end="\r")
             if self.debug:
                 time.sleep(deltaTime / 5)
 
             more_changes = any(utils.still_moving(s) for s in self.space.shapes)
             if not more_changes:
-                self.print('')
-                self.print('Steady state')
+                log.debug('')
+                log.debug('Steady state')
                 break
-        self.print()
+        log.debug()
 
         for stone in self.getStones():
             # pos = stone.body.position
-            self.print(
+            log.debug(
                 f"Stone("
                 f"{stone.color}, "
                 # f"x={utils.toFt(pos.x)}ft, y={utils.toFt(pos.y)}ft, "

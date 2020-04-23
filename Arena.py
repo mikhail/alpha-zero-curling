@@ -83,7 +83,6 @@ class Arena():
         p2_score = 0
         for _ in tqdm(range(math.ceil(num/2)), desc="Arena.playGames p1/p2"):
             res = self.playGame(verbose=verbose)
-            print(f'This game: {res}')
             if res > 0:
                 p1_score += res
             else:
@@ -93,7 +92,6 @@ class Arena():
         
         for _ in tqdm(range(math.floor(num/2)), desc="Arena.playGames p2/p1"):
             res = self.playGame(verbose=verbose)
-            print(f'This game: {-res}')
             if res > 0:
                 p2_score += res
             else:

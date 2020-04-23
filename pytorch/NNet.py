@@ -107,8 +107,6 @@ class NNetWrapper(NeuralNet):
         if not os.path.exists(folder):
             print("Checkpoint Directory does not exist! Making directory {}".format(folder))
             os.mkdir(folder)
-        else:
-            print("Checkpoint Directory exists! ")
         torch.save({
             'state_dict' : self.nnet.state_dict(),
         }, filepath)

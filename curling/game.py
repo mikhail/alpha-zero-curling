@@ -40,7 +40,8 @@ class CurlingGame:
     def getValidMoves(self, board, player):
 
         if self._thrownStones(board) >= 16:
-            print('WARNING: getValidMoves() requested at game end.')
+            data_row = board[-1][0:16]
+            log.warning('getValidMoves() requested at game end. Data: %s' % data_row)
             return [0] * self.getActionSize()
 
         player_turn = utils.getNextPlayer(board, player)
@@ -73,7 +74,7 @@ class CurlingGame:
 
         hammer_won = (win_color == c.P2_COLOR)
 
-        # print(f'Win count: {win_count}, color: {win_color}, hammer won: {hammer_won}')
+        log.debug(f'Win count: {win_count}, color: {win_color}, hammer won: {hammer_won}')
 
         if hammer_won:
             if win_count == 1:

@@ -21,7 +21,7 @@ class Space(pymunk.Space):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print('Creating a new space 🎉 ')
+        log.info('Creating a new space 🎉 ')
 
         self.five_rock_rule_violation = False
         self.p1_removed_stones = 0
