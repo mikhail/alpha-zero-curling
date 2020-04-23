@@ -1,6 +1,8 @@
 from logging import Handler
 import logging
 
+import coloredlogs
+
 
 def on_error(logger=None, target_handler=None, capacity=None, level_override=None):
     if target_handler is None:
@@ -11,6 +13,7 @@ def on_error(logger=None, target_handler=None, capacity=None, level_override=Non
         level_override = logging.DEBUG
 
     target_handler.setLevel(level_override)
+    target_handler.setFormatter(coloredlogs.ColoredFormatter('%(asctime)s %(name)s [%(levelname)s] %(message)s'))
     logger = logging.getLogger('')
     logger.setLevel(level_override)
     handler = RecentHandler(capacity, target=target_handler)

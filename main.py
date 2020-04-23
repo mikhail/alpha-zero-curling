@@ -1,6 +1,7 @@
 import logging
 from os import path
 
+import coloredlogs
 import torch
 
 from Coach import Coach
@@ -13,6 +14,8 @@ log = logging.getLogger('')
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
 log.addHandler(handler)
+
+coloredlogs.install(level='INFO', fmt='%(asctime)s %(name)s [%(levelname)s] %(message)s')
 
 torch.set_num_interop_threads(12)
 torch.set_num_threads(12)
@@ -40,24 +43,26 @@ args['load_model'] = path.exists(''.join(args['load_folder_file']))
 
 @log_handler.on_error()
 def main():
-    print('Loading Curling...')
+    log.info('Loading Curling...')
     g = CurlingGame()
-    print('Loading nn...')
+
+    log.info('Loading nn...')
     nnet = nn(g)
 
     if args.load_model:
-        print('Loading checkpoint...')
+        log.info('Loading checkpoint...')
         nnet.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
-    print('Loading Coach...')
+
+    log.info('Loading Coach...')
     c = Coach(g, nnet, args)
+
     if args.load_model:
-        print("Load trainExamples from file")
+        log.info("Load trainExamples from file")
         c.loadTrainExamples()
-    print('Learning...')
+
+    log.info('Learning...')
     c.learn()
 
 
 if __name__ == "__main__":
-    log.info('Info before main()')
-    log.debug('Debug before main()')
     main()

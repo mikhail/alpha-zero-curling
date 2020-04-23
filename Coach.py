@@ -156,7 +156,7 @@ class Coach():
             if r != "y":
                 sys.exit()
         else:
-            print("File with trainExamples found. Read it.")
+            log.debug("File with trainExamples found. Read it.")
             with open(examplesFile, "rb") as f:
                 self.trainExamplesHistory = Unpickler(f).load()
             f.closed
