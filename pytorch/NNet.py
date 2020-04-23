@@ -1,23 +1,17 @@
-import argparse
-import math
-import numpy as np
 import os
-import random
-import shutil
 import sys
 import time
-from NeuralNet import NeuralNet
+
+import numpy as np
 from tqdm import tqdm
+
+from NeuralNet import NeuralNet
 
 sys.path.append('../../')
 from utils import *
 
-import argparse
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import datasets, transforms
 
 from .OthelloNNet import OthelloNNet as onnet
 
@@ -32,8 +26,10 @@ args = dotdict({
     'num_channels': 512,
 })
 
+
 class NNetWrapper(NeuralNet):
     def __init__(self, game):
+        super().__init__(game)
         self.nnet = onnet(game, args)
         self.board_x, self.board_y = game.getBoardSize()
         self.action_size = game.getActionSize()
@@ -46,13 +42,12 @@ class NNetWrapper(NeuralNet):
         examples: list of examples, each example is of form (board, pi, v)
         """
         optimizer = optim.Adam(self.nnet.parameters())
-        batches = int(len(examples)/args.batch_size)
+        batches = int(len(examples) / args.batch_size)
 
-        for epoch in tqdm(range(args.epochs), desc="Epoch"):
+        for _ in tqdm(range(args.epochs), desc="Epoch"):
             self.nnet.train()
-            end = time.time()
 
-            for batch_idx in tqdm( range(batches), desc="Training"):
+            for _ in tqdm(range(batches), desc="Training"):
                 sample_ids = np.random.randint(len(examples), size=args.batch_size)
                 boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
                 boards = torch.FloatTensor(np.array(boards).astype(np.float64))
@@ -74,16 +69,10 @@ class NNetWrapper(NeuralNet):
                 total_loss.backward()
                 optimizer.step()
 
-                # measure elapsed time
-                end = time.time()
-
-
     def predict(self, board):
         """
         board: np array with board
         """
-        # timing
-        start = time.time()
 
         # preparing input
         board = torch.FloatTensor(board.astype(np.float64))
@@ -93,14 +82,14 @@ class NNetWrapper(NeuralNet):
         with torch.no_grad():
             pi, v = self.nnet(board)
 
-        #print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
+        # print('PREDICTION TIME TAKEN : {0:03f}'.format(time.time()-start))
         return torch.exp(pi).data.cpu().numpy()[0], v.data.cpu().numpy()[0]
 
     def loss_pi(self, targets, outputs):
-        return -torch.sum(targets*outputs)/targets.size()[0]
+        return -torch.sum(targets * outputs) / targets.size()[0]
 
     def loss_v(self, targets, outputs):
-        return torch.sum((targets-outputs.view(-1))**2)/targets.size()[0]
+        return torch.sum((targets - outputs.view(-1)) ** 2) / targets.size()[0]
 
     def save_checkpoint(self, folder='checkpoint', filename='checkpoint.pth.tar'):
         filepath = os.path.join(folder, filename)
@@ -108,7 +97,7 @@ class NNetWrapper(NeuralNet):
             print("Checkpoint Directory does not exist! Making directory {}".format(folder))
             os.mkdir(folder)
         torch.save({
-            'state_dict' : self.nnet.state_dict(),
+            'state_dict': self.nnet.state_dict(),
         }, filepath)
 
     def load_checkpoint(self, folder='checkpoint', filename='checkpoint.pth.tar'):

@@ -1,3 +1,4 @@
+from typing import List
 import logging
 import math
 
@@ -28,7 +29,7 @@ class Space(pymunk.Space):
         self.p2_removed_stones = 0
         self.shooter_color = 'Unknown'
 
-    def get_stones(self):
+    def get_stones(self) -> List['Stone']:
         return [s for s in self.shapes if type(s) == Stone]
 
     def thrownStonesCount(self):

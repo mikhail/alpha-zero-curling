@@ -39,7 +39,6 @@ class Simulation:
         utils.addBoundaries(space)
 
         self.space = space
-        self.debug = False
         self.boardSize = board_size
 
         self.resetBoard()
@@ -141,16 +140,13 @@ class Simulation:
         return board
 
     def run(self, deltaTime=c.DT):
-        # print(''.join(['🥌'] * len(list(self.getStones()))))
-        # print(utils.getBoardRepr( self.getBoard() ) )
         more_changes = True
-        last_break = 0
         sim_time = 0
         while more_changes:
             self.space.step(deltaTime)
 
             if self.space.five_rock_rule_violation:
-                log.debug('WARNING: 5 rock rule violated. Resetting the board!')
+                log.debug('Warning: 5 rock rule violated. Resetting the board!')
                 self.setupBoard(self.board_before_action)
                 self.addShooterAsInvalid()
                 self.space.five_rock_rule_violation = False
@@ -158,37 +154,7 @@ class Simulation:
 
             sim_time += deltaTime
             if sim_time > 60:
+                log.warning('Simulation running for more than 60 seconds.')
                 return
-            more_changes = False
-            if sim_time - last_break > .2:
-                log.debug(f"{sim_time:2.0f}s ", end='')
-                last_break = sim_time
-                for stone in self.getStones():
-                    # pos = stone.body.position
-                    log.debug(
-                        f"Stone("
-                        f"{stone.color}, "
-                        # f"x={utils.toFt(pos.x)}ft, y={utils.toFt(pos.y)}ft, "
-                        # f"v={stone.body.velocity.length:3.0f}, "
-                        # f"a={utils.Angle(stone.body.angle)})"
-                        , end=' ')
-                log.debug('', end="\r")
-            if self.debug:
-                time.sleep(deltaTime / 5)
 
-            more_changes = any(utils.still_moving(s) for s in self.space.shapes)
-            if not more_changes:
-                log.debug('')
-                log.debug('Steady state')
-                break
-        log.debug()
-
-        for stone in self.getStones():
-            # pos = stone.body.position
-            log.debug(
-                f"Stone("
-                f"{stone.color}, "
-                # f"x={utils.toFt(pos.x)}ft, y={utils.toFt(pos.y)}ft, "
-                # f"v={stone.body.velocity.length:3.0f}, "
-                # f"a={utils.Angle(stone.body.angle)})"
-            )
+            more_changes = any(s.moving() for s in self.space.get_stones())
