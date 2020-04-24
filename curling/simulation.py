@@ -1,11 +1,11 @@
 import logging
-import time
 from typing import List
 
 import numpy as np
 
 from curling import constants as c
 from curling import utils
+from curling.utils import getData
 
 log = logging.getLogger(__name__)
 
@@ -19,18 +19,19 @@ class ShooterNotFound(SimulationException): pass
 def getNextStoneId(board):
     """Return stone number as it would be in physical game."""
 
-    data_row = board[-1][0:16]
+    data_row = utils.getData(board)
     for i in range(8):
         if data_row[i] == c.P1_NOT_THROWN: return i
         if data_row[i + 8] == c.P2_NOT_THROWN: return i + 8
 
-    # 3  3  3  3  3  0  0  0 -3 -3 -3 -3 -3 -3 -3 -3
-    raise SimulationException('Id requested for 9th rock. Data row: %s' % data_row)
+    log.debug('Stone locations: %s', utils.getStoneLocations(board))
+    log.debug('Data row: %s', data_row)
+    raise SimulationException('Id requested for 9th rock.')
 
 
 class Simulation:
 
-    def __init__(self, board_size: (int, int)):  # TODO: FIXME: Simulation shouldn't know about board. Only game should
+    def __init__(self, board_size: (int, int)):
         space = utils.Space(threaded=True)
         space.threads = 12
         space.gravity = 0, 0
@@ -142,6 +143,7 @@ class Simulation:
     def run(self, deltaTime=c.DT):
         more_changes = True
         sim_time = 0
+        log.debug('run starting...')
         while more_changes:
             self.space.step(deltaTime)
 
@@ -158,3 +160,9 @@ class Simulation:
                 return
 
             more_changes = any(s.moving() for s in self.space.get_stones())
+
+        log.debug('run() complete with stones: %s and data: %s', self.getStones(), self.getData())
+
+    def getData(self):
+        board = self.getBoard()
+        return getData(board)

@@ -28,8 +28,10 @@ class CurlingGame:
         return len(c.ACTION_LIST)
 
     def getNextState(self, board, player, action):
-        log.debug(f'getNextState(board, {player}, {action})')
         self.sim.setupBoard(board)
+
+        log.debug(f'getNextState({self.stringRepresentation(board)}, {player}, {action})')
+        assert self._thrownStones(utils.getData(board)) < 16
         self.sim.setupAction(player, action)
         self.sim.run()
 
@@ -41,7 +43,7 @@ class CurlingGame:
     def getValidMoves(self, board, player):
         self.sim.setupBoard(board)
 
-        data_row = board[-1][0:16]
+        data_row = utils.getData(board)
 
         if self._thrownStones(data_row) >= 16:
             log.error('getValidMoves() requested at game end. Data: %s' % data_row)
@@ -56,8 +58,10 @@ class CurlingGame:
 
     def getGameEnded(self, board, player):
         self.sim.setupBoard(board)
-        data_row = board[-1][0:16]
+        data_row = utils.getData(board)
+        log.debug(f'getGameEnded({self.stringRepresentation(board)})')
         if self._thrownStones(data_row) < 16:
+            log.debug('getGameEnded -> 0')
             return 0
 
         house_radius = utils.dist(feet=6, inches=c.STONE_RADIUS_IN)
@@ -69,6 +73,7 @@ class CurlingGame:
 
         if len(in_house) == 0:
             # Draw is better than being forced to 1
+            log.debug('getGameEnded -> 0.5')
             return 0.5
 
         win_color = in_house[0].color
@@ -86,9 +91,11 @@ class CurlingGame:
                 # This is almost as bad as losing
                 return -0.5
             # 2 or more stones is a great win
+            log.debug('getGameEnded -> %s', win_count)
             return win_count
 
         # a steal is always good
+        log.debug('getGameEnded -> %s', -win_count)
         return win_count * -1
 
     def _thrownStones(self, data_row):
@@ -97,13 +104,15 @@ class CurlingGame:
         p2_oop = len(np.argwhere(data_row == c.P2_OUT_OF_PLAY))
         thrown_stones = len(stones) + p1_oop + p2_oop
         log.debug(f'thrownStones() -> {thrown_stones}')
+        assert thrown_stones <= 16
         return thrown_stones
 
     @staticmethod
     def getCanonicalForm(board, player):
-        log.debug(f'getCanonicalForm({board[-1][0:16]}, {player})')
+        data_row = utils.getData(board)
+        log.debug(f'getCanonicalForm({data_row}, {player})')
         if player == c.P1:
-            log.debug(f'getCanonicalForm(board, {player}) -> {board[-1][0:16]}')
+            log.debug(f'getCanonicalForm(board, {player}) -> {data_row}')
             return board
 
         flip = board * -1
@@ -111,7 +120,7 @@ class CurlingGame:
         # Data row remains the same
         flip[-1][0:8] = (board[-1][8:16] * -1)
         flip[-1][8:16] = (board[-1][0:8] * -1)
-        log.debug(f'getCanonicalForm(board, {player}) -> {flip[-1][0:16]}')
+        log.debug(f'getCanonicalForm(board, {player}) -> {utils.getData(flip)}')
         return flip
 
     @staticmethod

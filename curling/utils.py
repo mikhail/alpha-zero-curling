@@ -1,6 +1,6 @@
-from typing import List
 import logging
 import math
+from typing import List
 
 import numpy as np
 import pymunk
@@ -308,3 +308,11 @@ def getNextPlayer(board, player=c.P1):
             return -1
 
     raise GameException("It is nobody's turn. Player: %s Data row: %s" % (player, data_row[0:16]))
+
+
+def getData(board: np.ndarray):
+    return board[-1][0:16]
+
+
+def getStoneLocations(board: np.ndarray) -> (List[int], List[int]):
+    return np.argwhere(board == c.P1), np.argwhere(board == c.P2)

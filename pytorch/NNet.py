@@ -68,6 +68,7 @@ class NNetWrapper(NeuralNet):
                 optimizer.zero_grad()
                 total_loss.backward()
                 optimizer.step()
+        print()  # Correct line for nested tqdm
 
     def predict(self, board):
         """
