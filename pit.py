@@ -31,9 +31,6 @@ mcts1 = MCTS(game, n1, args1)
 n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
 
 
-player1 = hp
-player2 = n1p
-
-arena = Arena.Arena(player1, player2, game, display=CurlingGame.display)
+arena = Arena.Arena(player1=hp, player2=hp, game=game, display=CurlingGame.display)
 
 print(arena.playGames(2, verbose=True))

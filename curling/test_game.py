@@ -1,6 +1,7 @@
 import numpy as np
 
 import curling.utils
+import log_handler
 from . import constants as c
 from . import game
 from . import utils
@@ -112,6 +113,7 @@ def test_gameEnded_NoStonesInPlay():
     assert ended == 0.5  # Draw
 
 
+@log_handler.on_error()
 def test_gameEnded_HammerWinsBy1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -290,13 +292,13 @@ def test_gameEnded_edgeCase():
 
     curl = game.CurlingGame()
     board = curl.getInitBoard()
-    board[-1][0:7] = [3] * 7
-    board[-1][8:16] = [-3] * 8
+    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
+    board[-1][8:16] = [c.P2_OUT_OF_PLAY] * 8
 
     assert curl.getGameEnded(board, 1) == 0
 
-    board[-1][7] = 2
-    board[2][2] = 1
+    board[-1][7] = c.EMPTY
+    board[2][2] = c.P1
 
     assert curl.getGameEnded(board, 1) != 0
 

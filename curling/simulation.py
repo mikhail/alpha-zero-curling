@@ -24,8 +24,9 @@ def getNextStoneId(board):
         if data_row[i] == c.P1_NOT_THROWN: return i
         if data_row[i + 8] == c.P2_NOT_THROWN: return i + 8
 
-    log.debug('Stone locations: %s', utils.getStoneLocations(board))
-    log.debug('Data row: %s', data_row)
+    log.error('Failure:')
+    log.error('Stone locations: %s', utils.getStoneLocations(board))
+    log.error('Data row: %s', data_row)
     raise SimulationException('Id requested for 9th rock.')
 
 
@@ -46,6 +47,7 @@ class Simulation:
         self.board_before_action = self.getBoard()
 
     def setupBoard(self, new_board):
+        log.debug(f'setupBoard({utils.getBoardRepr(new_board)})')
         self.resetBoard()
         team1 = np.argwhere(new_board == c.P1)
         team2 = np.argwhere(new_board == c.P2)
@@ -105,11 +107,11 @@ class Simulation:
         raise ShooterNotFound()
 
     def addShooterAsInvalid(self):
-        board = self.getBoard()
-        team = utils.getNextPlayer(board)
-        stone_id = getNextStoneId(board)
-        invalid = c.P1_OUT_OF_PLAY if team == 1 else c.P2_OUT_OF_PLAY
-        board[-1][stone_id] = invalid
+        team = utils.getNextPlayer(self.getBoard())
+        if team == c.P1:
+            self.space.p1_removed_stones += 1
+        else:
+            self.space.p2_removed_stones += 1
 
     def getStones(self) -> List[utils.Stone]:
         return [s for s in self.space.shapes if type(s) == utils.Stone]
@@ -117,18 +119,23 @@ class Simulation:
     def getBoard(self):
         board = utils.getInitBoard()
         all_stones = list(self.getStones())
-
+        log.debug(f'Collected {len(all_stones)} stones.')
         p1_stone_id = self.space.p1_removed_stones
         p2_stone_id = self.space.p2_removed_stones
 
         board[-1][0:self.space.p1_removed_stones] = [c.P1_OUT_OF_PLAY] * self.space.p1_removed_stones
         board[-1][8:self.space.p2_removed_stones + 8] = [c.P2_OUT_OF_PLAY] * self.space.p2_removed_stones
 
+        log.debug('Current board: %s', utils.getBoardRepr(board))
         for stone in all_stones:
+            log.debug(f'Analyzing {stone}')
             x, y = utils.realToBoard(stone.body.position.x, stone.body.position.y)
             team_id = stone.getTeamId()
 
+            if board[x][y] != c.EMPTY:
+                raise SimulationException(f'Space {x, y} occupied by value "{board[x][y]}"')
             board[x][y] = team_id
+            log.debug(f'Adding stone for team "{team_id}" to {x, y}')
 
             if team_id == c.P1:
                 board[-1][p1_stone_id] = c.EMPTY
@@ -156,8 +163,7 @@ class Simulation:
 
             sim_time += deltaTime
             if sim_time > 60:
-                log.warning('Simulation running for more than 60 seconds.')
-                return
+                raise SimulationException('Simulation running for more than 60 seconds.')
 
             more_changes = any(s.moving() for s in self.space.get_stones())
 

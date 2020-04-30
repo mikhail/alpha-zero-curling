@@ -1,10 +1,14 @@
+import logging
 import math
+
 import numpy as np
 from tqdm import tqdm
 
 tqdm.monitor_interval = 0
 
 EPS = 1e-8
+
+log = logging.getLogger(__name__)
 
 
 class MCTS():
@@ -73,10 +77,12 @@ class MCTS():
         """
 
         s = self.game.stringRepresentation(canonicalBoard)
+        log.debug('search() stringRepresentation (s): %s', s)
 
         if s not in self.Es:
             self.Es[s] = self.game.getGameEnded(canonicalBoard, 1)
 
+        log.debug('Es[s]: %s', self.Es[s])
         if self.Es[s] != 0:
             # terminal node
             return -self.Es[s]
@@ -113,7 +119,7 @@ class MCTS():
             if valids[a]:
                 if (s, a) in self.Qsa:
                     u = self.Qsa[(s, a)] + self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
-                                1 + self.Nsa[(s, a)])
+                            1 + self.Nsa[(s, a)])
                 else:
                     u = self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
 

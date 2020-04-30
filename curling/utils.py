@@ -10,6 +10,27 @@ from curling import constants as c
 log = logging.getLogger(__name__)
 
 
+def dist(inches=0., feet=0., meters=0.):
+    """Returns value in inches"""
+    return (feet * 12.0) + inches + (meters * 39.3701)
+
+
+ICE_WIDTH = dist(feet=14)
+# TODO: FIXME: XXX: NOTE: Why the hell is this 130? Either 132 (including hack) or 126 (back to back)
+ICE_LENGTH = dist(feet=130)
+BOX_LENGTH = dist(feet=27)
+STONE_RADIUS = dist(inches=c.STONE_RADIUS_IN)
+
+HOG_LINE = ICE_LENGTH - BOX_LENGTH
+BACKLINE = ICE_LENGTH
+BACKLINE_BUFFER = 2 * STONE_RADIUS
+BACKLINE_ELIM = BACKLINE + BACKLINE_BUFFER  # Point at which the stones are removed from the game
+
+# For conversion between Board and Real
+X_SCALE = (ICE_WIDTH - 2.0 * STONE_RADIUS) / ICE_WIDTH
+Y_SCALE = (BACKLINE_ELIM - (0.0 * STONE_RADIUS)) / BACKLINE_ELIM  # Why is this 0? Test works, but why??
+
+
 class GameException(Exception):
     """Raise when rules of the game are broken."""
 
@@ -48,8 +69,8 @@ class Space(pymunk.Space):
     def get_shooter_color(self):
         return self.shooter_color
 
-    def remove_stone(self, stone):
-        log.debug("- %s" % stone)
+    def remove_stone(self, stone, reason=''):
+        log.debug(f'- {stone} {reason}')
         team = stone.getTeamId()
         if team == c.P1:
             self.p1_removed_stones += 1
@@ -76,9 +97,9 @@ class Stone(pymunk.Circle):
     def __repr__(self):
         self.updateGuardValue()
         guard = ' guard' if self.is_guard and not self.moving() else ''
-        shooter = ' shooter' if self.moving() else ''
+        moving = ' moving' if self.moving() else ''
         return (
-            f'<Stone {self.id} {self.color}{guard}{shooter} @ ('
+            f'<Stone {self.id} {self.color}{guard}{moving} @ ('
             f'{self.body.position.x:n},{self.body.position.y:n}'
             ')>'
         )
@@ -89,7 +110,7 @@ class Stone(pymunk.Circle):
         return vx or vy
 
     def updateGuardValue(self):
-        radius = dist(inches=c.STONE_RADIUS_IN)
+        radius = STONE_RADIUS
         hog_line = radius + dist(feet=6 + 6 + 21 + 72)
         tee_line = hog_line + dist(feet=21)
         from_pin = euclid(self.body.position, pymunk.Vec2d(0, tee_line))
@@ -97,7 +118,7 @@ class Stone(pymunk.Circle):
         y = self.body.position.y
 
         before_tee = y < tee_line
-        not_in_house = from_pin > dist(feet=6) + dist(inches=c.STONE_RADIUS_IN)
+        not_in_house = from_pin > dist(feet=6) + STONE_RADIUS
 
         self.is_guard = before_tee and not_in_house
 
@@ -105,27 +126,21 @@ class Stone(pymunk.Circle):
         return c.P1 if self.color == c.P1_COLOR else c.P2
 
 
-def dist(inches=0., feet=0., meters=0.):
-    """Returns value in inches"""
-    return (feet * 12.0) + inches + (meters * 39.3701)
-
-
-ICE_WIDTH = dist(feet=14)
-# TODO: FIXME: XXX: NOTE: Why the hell is this 130? Either 132 (including hack) or 126 (back to back)
-ICE_LENGTH = dist(feet=130)
-BOX_SIZE = dist(feet=27)
-HOG_LINE = ICE_LENGTH - BOX_SIZE
+ADJUSTER = 0.5  # Needed to help int() function properly. Python's round() does Engineering rounding.
 
 
 def realToBoard(x, y) -> (int, int):
-    bx, by = math.floor((x + (ICE_WIDTH / 2.0)) * c.BOARD_RESOLUTION), math.floor((y - HOG_LINE) * c.BOARD_RESOLUTION)
-    return bx, by
+    bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION - ADJUSTER
+    by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION - ADJUSTER
+    ix, iy = int(bx), int(by)
+    log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
+    return ix, iy
 
 
-def boardToReal(x, y):
-    real_x = (x / c.BOARD_RESOLUTION) - ICE_WIDTH / 2.0
-    real_y = (y / c.BOARD_RESOLUTION) + HOG_LINE
-
+def boardToReal(x: float, y: float):
+    real_x = ((float(x) + ADJUSTER) / c.BOARD_RESOLUTION) * X_SCALE + STONE_RADIUS - (ICE_WIDTH / 2.0)
+    real_y = ((float(y) + ADJUSTER) / c.BOARD_RESOLUTION) * Y_SCALE + STONE_RADIUS + HOG_LINE
+    log.debug(f'boardToReal({x, y}) -> {real_x, real_y}')
     return real_x, real_y
 
 
@@ -171,11 +186,14 @@ def calculateVelocityVector(weight: str, broom: int):
 
 
 def addBoundaries(space: Space):
-    left = dist(feet=-7)
-    right = dist(feet=7)
+    log.info('Adding boundaries to space')
+    left = -ICE_WIDTH / 2
+    right = ICE_WIDTH / 2
     # stones are removed when they exit the actual backline.
-    backline = dist(feet=130) + 2 * dist(inches=c.STONE_RADIUS_IN)
-
+    backline = dist(feet=130) + 2 * STONE_RADIUS
+    log.debug(f'Boundaries (left, right, backline) = {left, right, backline}')
+    log.debug(
+        f'Adjusted Boundaries (left, right, backline) = {left + STONE_RADIUS, right - STONE_RADIUS, backline + 2 * STONE_RADIUS}')
     w1, w2, w3 = (
         pymunk.Segment(space.static_body, (left, 0), (left, backline), 1),
         pymunk.Segment(space.static_body, (left, backline), (right, backline), 1),
@@ -192,7 +210,7 @@ def addBoundaries(space: Space):
         if five_rock_rule(stone, local_space):
             local_space.five_rock_rule_violation = True
             return False
-        local_space.remove_stone(stone)
+        local_space.remove_stone(stone, 'Collision with the wall')
 
         return True
 
@@ -210,7 +228,7 @@ def still_moving(shape):
 def newStone(color: str):
     body = pymunk.Body()
     body.velocity_func = stone_velocity
-    stone = Stone(body, dist(inches=c.STONE_RADIUS_IN))
+    stone = Stone(body, STONE_RADIUS)
     stone.mass = c.STONE_MASS
     stone.color = color
     stone.friction = 1.004  # interaction with other objects, not with "ice"
@@ -279,10 +297,10 @@ def getInitBoard():
 
 def getBoardSize() -> (int, int):
     width_px = int(ICE_WIDTH * c.BOARD_RESOLUTION)
-    height_px = int(BOX_SIZE * c.BOARD_RESOLUTION)
+    height_px = int(BOX_LENGTH * c.BOARD_RESOLUTION)
 
     data_layer = 1  # 1 entire row is dedicated to keep track of data (stones thrown/out of play)
-    return width_px, height_px + data_layer
+    return width_px + data_layer, height_px
 
 
 def getNextPlayer(board, player=c.P1):

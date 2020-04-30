@@ -11,11 +11,12 @@ from utils import *
 import log_handler
 
 log = logging.getLogger('')
-handler = logging.StreamHandler()
-handler.setLevel(logging.INFO)
-log.addHandler(handler)
+stream = logging.StreamHandler()
+stream.setLevel(logging.INFO)
+log.addHandler(stream)
 
-coloredlogs.install(level='INFO', fmt='%(asctime)s %(name)s [%(levelname)s] %(message)s')
+fmt = '%(asctime)s %(filename)s:%(lineno)s %(funcName)s [%(levelname)s] %(message)s'
+coloredlogs.install(level='INFO', fmt=fmt)
 
 torch.set_num_interop_threads(12)
 torch.set_num_threads(12)

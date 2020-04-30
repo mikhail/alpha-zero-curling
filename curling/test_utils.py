@@ -19,14 +19,39 @@ def test_get_board_repr_teams():
     assert string == '1:[[0, 0]]:2:[[2, 2]]:d:[0, 0, 0, 0, 0]'
 
 
-def test_real_to_board_and_back():
-    assert utils.realToBoard(*utils.boardToReal(0, 0)) == (0.0, 0.0)
-    assert utils.realToBoard(*utils.boardToReal(1, 1)) == (1.0, 1.0)
-    assert utils.realToBoard(*utils.boardToReal(-33, -66)) == (-33.0, -66.0)
+def test_board_to_real():
+    c.BOARD_RESOLUTION = 1
 
-    assert utils.boardToReal(*utils.realToBoard(0, 0)) == (0.0, 0.0)
-    assert utils.boardToReal(*utils.realToBoard(1, 1)) == (1.0, 1.0)
-    assert utils.boardToReal(*utils.realToBoard(-33, -66)) == (-33.0, -66.0)
+    left_wall = -utils.ICE_WIDTH / 2
+    right_wall = utils.ICE_WIDTH / 2
+    board_max_x, board_max_y = utils.getBoardSize()
+    board_max_y -= 1  # Ignore the data layer
+
+    radius = utils.STONE_RADIUS
+    assert all(
+        np.isclose(
+            utils.boardToReal(0, 0),
+            (left_wall + radius, utils.HOG_LINE + radius),
+            rtol=c.BOARD_RESOLUTION))
+
+    rx, ry = utils.boardToReal(board_max_x, board_max_y)
+    ex, ey = (right_wall - radius, utils.BACKLINE_ELIM - radius)
+    assert np.isclose(rx, ex, rtol=c.BOARD_RESOLUTION)
+    assert np.isclose(ry, ey, rtol=c.BOARD_RESOLUTION)
+
+
+def test_real_to_board():
+    c.BOARD_RESOLUTION = 1
+
+    left_wall = -utils.ICE_WIDTH / 2
+    right_wall = utils.ICE_WIDTH / 2
+    board_max_x, board_max_y = utils.getBoardSize()
+    board_max_x -= 1  # Ignore the data layer
+
+    radius = utils.STONE_RADIUS
+    assert utils.realToBoard(left_wall + radius, utils.HOG_LINE + radius) == (0, 0)
+
+    assert utils.realToBoard(right_wall - radius, utils.BACKLINE_ELIM - radius) == (board_max_x - 1, board_max_y - 1)
 
 
 def test_five_rock_rule_first():

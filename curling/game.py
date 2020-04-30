@@ -1,3 +1,4 @@
+import json
 import logging
 
 import numpy as np
@@ -11,12 +12,17 @@ log = logging.getLogger(__name__)
 BUTTON_POSITION = utils.pymunk.Vec2d(0, utils.dist(feet=124.5))  # TODO: MOVE IT OUT OF HERE
 
 
+class GameException(Exception):
+    """Logic within game is broken."""
+
+
 class CurlingGame:
 
     def __init__(self):
         self.sim = simulation.Simulation(self.getBoardSize())
 
-    def getInitBoard(self):
+    @classmethod
+    def getInitBoard(cls):
         return utils.getInitBoard()
 
     def getBoardSize(self):
@@ -28,9 +34,9 @@ class CurlingGame:
         return len(c.ACTION_LIST)
 
     def getNextState(self, board, player, action):
+        log.debug(f'getNextState({self.stringRepresentation(board)}, {player}, {action})')
         self.sim.setupBoard(board)
 
-        log.debug(f'getNextState({self.stringRepresentation(board)}, {player}, {action})')
         assert self._thrownStones(utils.getData(board)) < 16
         self.sim.setupAction(player, action)
         self.sim.run()
@@ -54,7 +60,7 @@ class CurlingGame:
         if player_turn == player:
             return [1] * self.getActionSize()  # all moves are valid
 
-        return [0] * self.getActionSize()
+        raise GameException(f'Moves requested for player ({player}) do not match next player ({player_turn})')
 
     def getGameEnded(self, board, player):
         self.sim.setupBoard(board)
@@ -131,6 +137,25 @@ class CurlingGame:
     @staticmethod
     def stringRepresentation(board):
         return str(utils.getBoardRepr(board))
+
+    @classmethod
+    def boardFromString(cls, string: str):
+        # "1: []:2: [[15, 16]]:d: [3, 3, 3, 3, 3, 3, 3, 2, -3, -3, -3, -3, -3, -3, -3, 0]"
+        board = cls.getInitBoard()
+        log.debug(f'Creating a board of size: {utils.getBoardSize()}')
+        data = string.split(':')
+        team1 = json.loads(data[1])
+        team2 = json.loads(data[3])
+        for x, y in team1:
+            log.debug(f'Adding "{c.P1}" @ {x, y}')
+            board[x, y] = c.P1
+        for x, y in team2:
+            log.debug(f'Adding "{c.P2}" @ {x, y}')
+            board[x, y] = c.P2
+        board[-1][0:16] = json.loads(data[5])
+        log.debug('Back to string: %s' % cls.stringRepresentation(board))
+        assert string == cls.stringRepresentation(board)
+        return board
 
     @staticmethod
     def display(board):

@@ -1,5 +1,5 @@
-from logging import Handler
 import logging
+from logging import Handler
 
 import coloredlogs
 
@@ -13,14 +13,16 @@ def on_error(logger=None, target_handler=None, capacity=None, level_override=Non
         level_override = logging.DEBUG
 
     target_handler.setLevel(level_override)
-    target_handler.setFormatter(coloredlogs.ColoredFormatter('%(asctime)s %(name)s [%(levelname)s] %(message)s'))
+    fmt = '%(asctime)s %(filename)s:%(lineno)s %(funcName)s [%(levelname)s] %(message)s'
+
+    target_handler.setFormatter(coloredlogs.ColoredFormatter(fmt))
     logger = logging.getLogger('')
     logger.setLevel(level_override)
-    handler = RecentHandler(capacity, target=target_handler)
+    nrecent = NRecent(capacity, target=target_handler)
 
     def decorator(fn):
         def wrapper(*args, **kwargs):
-            logger.addHandler(handler)
+            logger.addHandler(nrecent)
             caught_exception = False
             try:
                 return fn(*args, **kwargs)
@@ -32,17 +34,17 @@ def on_error(logger=None, target_handler=None, capacity=None, level_override=Non
                     logger.info('', extra={'skip_in_recent': True})
                     logger.info('### Log Handler caught exception. Flushing logs:', extra={'skip_in_recent': True})
                     logger.info('', extra={'skip_in_recent': True})
-                    handler.flush()
+                    nrecent.flush()
                 else:
-                    handler.close()
-                logger.removeHandler(handler)
+                    nrecent.close()
+                logger.removeHandler(nrecent)
 
         return wrapper
 
     return decorator
 
 
-class RecentHandler(Handler):
+class NRecent(Handler):
     """
     Keeps track of most recent `capacity` number of logs. Only emits them when flush() is called.
     """
