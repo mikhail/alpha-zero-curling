@@ -164,7 +164,6 @@ class Simulation:
             sim_time += deltaTime
             if sim_time > 60:
                 raise SimulationException('Simulation running for more than 60 seconds.')
-
             more_changes = any(s.moving() for s in self.space.get_stones())
 
         log.debug('run() complete with stones: %s and data: %s', self.getStones(), self.getData())

@@ -107,7 +107,8 @@ class Stone(pymunk.Circle):
     def moving(self):
         vx = abs(self.body.velocity.x) > 0.01
         vy = abs(self.body.velocity.y) > 0.01
-        return vx or vy
+        ret = vx or vy
+        return ret
 
     def updateGuardValue(self):
         radius = STONE_RADIUS
@@ -168,6 +169,10 @@ def stone_velocity(body, gravity, damping, dt):
 
     V_curl = getCurlingVelocity(body)  # * dt
     body.velocity -= V_curl
+    if abs(body.angular_velocity) > V_curl.length:  # TODO: Investigate if V_curl is the right thing to use here.
+        body.angular_velocity -= V_curl.length
+    else:
+        body.angular_velocity = 0
 
     pymunk.Body.update_velocity(body, gravity, damping, dt)
 
@@ -243,7 +248,7 @@ def sqGauss(x: float, m=1., o=0., em=1., eo=0.):
     return (x * m + o) * math.exp(-(math.pow(x, 2) * em + eo))
 
 
-def getCurlingVelocity(body):
+def getCurlingVelocity(body) -> pymunk.Vec2d:
     # numbers taken from index.ts but adjusted to work. Unknown discrepancy
     # Adjustments made to curl 6ft on tee-line draw.
 

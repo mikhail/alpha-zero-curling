@@ -34,7 +34,7 @@ class CurlingGame:
         return len(c.ACTION_LIST)
 
     def getNextState(self, board, player, action):
-        log.debug(f'getNextState({self.stringRepresentation(board)}, {player}, {action})')
+        log.debug(f'getNextState({self.stringRepresentation(board)}, {player}, {action}={utils.decodeAction(action)})')
         self.sim.setupBoard(board)
 
         assert self._thrownStones(utils.getData(board)) < 16

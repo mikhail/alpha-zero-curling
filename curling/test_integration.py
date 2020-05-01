@@ -8,6 +8,7 @@ from . import game
 
 log = logging.getLogger(__name__)
 
+
 def test_guard():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -128,5 +129,11 @@ def test_stone_lands_on_data_row():
 
 def test_infinite_run():
     """
-    getNextState(1:[[2, 46], [18, 45], [29, 43]]:2:[[6, 43], [13, 36]]:d:[3, 0, 0, 0, 2, 2, 2, 2, -3, -3, 0, 0, -2, -2, -2, -2], 1, 50)
+    The spin of these two rocks caused infinite curl because body.angular_velocity was not subject to friction.
     """
+
+    bs = "1:[]:2:[[13, 36]]:d:[3, 0, 0, 0, 2, 2, 2, 2, -3, -3, 0, 0, -2, -2, -2, -2]"
+    curl = game.CurlingGame()
+    board = curl.boardFromString(bs)
+
+    curl.getNextState(board, 1, 50)
