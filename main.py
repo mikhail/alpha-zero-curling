@@ -15,7 +15,7 @@ stream = logging.StreamHandler()
 stream.setLevel(logging.INFO)
 log.addHandler(stream)
 
-fmt = '%(asctime)s %(filename)s:%(lineno)s %(funcName)s [%(levelname)s] %(message)s'
+fmt = '%(asctime)s %(filename).5s:%(lineno)s %(funcName)s [%(levelname)s] %(message)s'
 coloredlogs.install(level='INFO', fmt=fmt)
 
 torch.set_num_interop_threads(12)
@@ -33,7 +33,6 @@ args = dotdict({
     'cpuct': 2,
 
     'checkpoint': './curling/data_image/',
-    'load_model': True,
     'load_folder_file': ('./curling/data_image/', 'checkpoint_best.pth.tar'),
     'numItersForTrainExamplesHistory': 10000,
 
@@ -54,6 +53,8 @@ def main():
     if args.load_model:
         log.info('Loading checkpoint...')
         nnet.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
+    else:
+        log.warning('Not loading a checkpoint!')
 
     log.info('Loading Coach...')
     c = Coach(g, nnet, args)

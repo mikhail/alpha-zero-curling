@@ -14,7 +14,7 @@ STONE_RADIUS_IN = 5.73
 STONE_MASS = 2  # units don't matter... 1 'stone" weight.
 G_FORCE = 9.81  # In meters
 SURFACE_FRICTION = 0.02  # Experimentally picked -- draw weight of 20s
-DT = 0.002  # Simulation deltaTime
+DT = 0.016  # Simulation deltaTime
 WEIGHT_FT = {
     #    '1': 108,
     #    '2': 112,

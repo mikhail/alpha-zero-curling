@@ -27,7 +27,7 @@ class HumanPlayer():
             move = input()
             weight, handle, broom = move.split(' ')
             try:
-                action = curling.constants.ACTION_LIST.index((int(handle), weight, int(broom)))
+                action = curling.constants.utils.getAction1
                 break
             except KeyboardInterrupt:
                 raise

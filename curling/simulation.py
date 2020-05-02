@@ -15,6 +15,8 @@ class SimulationException(Exception): pass
 
 class ShooterNotFound(SimulationException): pass
 
+class Timeout(SimulationException): pass
+
 
 def getNextStoneId(board):
     """Return stone number as it would be in physical game."""
@@ -119,14 +121,12 @@ class Simulation:
     def getBoard(self):
         board = utils.getInitBoard()
         all_stones = list(self.getStones())
-        log.debug(f'Collected {len(all_stones)} stones.')
         p1_stone_id = self.space.p1_removed_stones
         p2_stone_id = self.space.p2_removed_stones
 
         board[-1][0:self.space.p1_removed_stones] = [c.P1_OUT_OF_PLAY] * self.space.p1_removed_stones
         board[-1][8:self.space.p2_removed_stones + 8] = [c.P2_OUT_OF_PLAY] * self.space.p2_removed_stones
 
-        log.debug('Current board: %s', utils.getBoardRepr(board))
         for stone in all_stones:
             log.debug(f'Analyzing {stone}')
             x, y = utils.realToBoard(stone.body.position.x, stone.body.position.y)
@@ -135,7 +135,6 @@ class Simulation:
             if board[x][y] != c.EMPTY:
                 raise SimulationException(f'Space {x, y} occupied by value "{board[x][y]}"')
             board[x][y] = team_id
-            log.debug(f'Adding stone for team "{team_id}" to {x, y}')
 
             if team_id == c.P1:
                 board[-1][p1_stone_id] = c.EMPTY
@@ -163,7 +162,8 @@ class Simulation:
 
             sim_time += deltaTime
             if sim_time > 60:
-                raise SimulationException('Simulation running for more than 60 seconds.')
+                log.error('Simulation running for more than 60 seconds.')
+                raise Timeout()
             more_changes = any(s.moving() for s in self.space.get_stones())
 
         log.debug('run() complete with stones: %s and data: %s', self.getStones(), self.getData())

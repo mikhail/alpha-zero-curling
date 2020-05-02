@@ -81,6 +81,7 @@ class Space(pymunk.Space):
 
 
 class Stone(pymunk.Circle):
+    body: pymunk.Body
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -108,6 +109,7 @@ class Stone(pymunk.Circle):
         vx = abs(self.body.velocity.x) > 0.01
         vy = abs(self.body.velocity.y) > 0.01
         ret = vx or vy
+        # print(f'Stone<{self.id}> moving = {ret} @ {self.body.velocity}')
         return ret
 
     def updateGuardValue(self):
@@ -134,15 +136,19 @@ def realToBoard(x, y) -> (int, int):
     bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION - ADJUSTER
     by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION - ADJUSTER
     ix, iy = int(bx), int(by)
-    log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
+    # log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
     return ix, iy
 
 
 def boardToReal(x: float, y: float):
     real_x = ((float(x) + ADJUSTER) / c.BOARD_RESOLUTION) * X_SCALE + STONE_RADIUS - (ICE_WIDTH / 2.0)
     real_y = ((float(y) + ADJUSTER) / c.BOARD_RESOLUTION) * Y_SCALE + STONE_RADIUS + HOG_LINE
-    log.debug(f'boardToReal({x, y}) -> {real_x, real_y}')
+    # log.debug(f'boardToReal({x, y}) -> {real_x, real_y}')
     return real_x, real_y
+
+
+def getAction(handle: int, weight: str, broom: int):
+    return c.ACTION_LIST.index((int(handle), weight, int(broom)))
 
 
 def decodeAction(action):
@@ -165,12 +171,17 @@ def getPlayerColor(player):
 def stone_velocity(body, gravity, damping, dt):
     F_normal = body.mass * dist(meters=c.G_FORCE)
     F_fr = c.SURFACE_FRICTION * F_normal
-    body.force = body.velocity.normalized() * F_fr * -1
 
-    V_curl = getCurlingVelocity(body)  # * dt
-    body.velocity -= V_curl
-    if abs(body.angular_velocity) > V_curl.length:  # TODO: Investigate if V_curl is the right thing to use here.
-        body.angular_velocity -= V_curl.length
+    mult = min(body.velocity.length, 1)
+    body.force = body.velocity.normalized() * F_fr * -1 * mult
+
+    F_curl = getCurlingForce(body)
+    body.force -= F_curl
+
+    direction = 1 if body.angular_velocity > 0 else -1
+    angular_damping = 0.0001
+    if abs(body.angular_velocity) > angular_damping:
+        body.angular_velocity -= angular_damping * direction
     else:
         body.angular_velocity = 0
 
@@ -244,18 +255,16 @@ def newStone(color: str):
     return stone
 
 
-def sqGauss(x: float, m=1., o=0., em=1., eo=0.):
+def sqGauss(x: float, m: float = 1, o: float = 0, em: float = 1, eo: float = 0) -> float:
     return (x * m + o) * math.exp(-(math.pow(x, 2) * em + eo))
 
 
-def getCurlingVelocity(body) -> pymunk.Vec2d:
-    # numbers taken from index.ts but adjusted to work. Unknown discrepancy
-    # Adjustments made to curl 6ft on tee-line draw.
+def getCurlingForce(body) -> pymunk.Vec2d:
+    # numbers not the same as index.ts because this is now Force not Velocity.
 
-    speed = body.velocity.length / 12 / 6  # 12 because ft/inch. 6 - no idea
+    speed = body.velocity.length / 25
 
-    # using 008 instead of 005 also don't know why
-    curlFromSpeed = sqGauss(speed, 0.008, 0, 0.2, 1.5)
+    curlFromSpeed = sqGauss(speed, 1500, 0, 0.2, 1.5)
 
     curl_effect = 1
     if abs(body.angular_velocity) < 0.01:
@@ -264,6 +273,8 @@ def getCurlingVelocity(body) -> pymunk.Vec2d:
     direction = 90 if body.angular_velocity < 0 else -90
     curlVector = body.velocity.normalized() * curlFromSpeed * curl_effect
     curlVector.rotate_degrees(direction)
+
+    # print(f"speed={speed} curl={curlFromSpeed} effect={curl_effect} vec={curlVector.length}")
 
     return curlVector
 
