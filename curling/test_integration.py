@@ -249,3 +249,20 @@ def test_it_curls_right():
 
     right_house = utils.dist(feet=5)
     assert stone.body.position.x > right_house  # positive handle, positive broom, should cross over the center
+
+
+@log_handler.on_error()
+def test_ninth_rock_requested():
+    curl = game.CurlingGame()
+
+    bs = "1:[[8, 30]]:2:[[3, 38], [5, 31], [11, 34]]:d:[3, 3, 3, 3, 3, 3, 0, 2, -3, -3, -3, -3, -3, 0, 0, 0]"
+    # , 1, 3 = (1, '3', -3))
+    board = curl.boardFromString(bs)
+    curl.getNextState(board, 1, 3)
+
+
+    bs = "1:[[8, 30]]:2:[[4, 33], [6, 37], [7, 39], [11, 34]]:d:[3, 3, 3, 3, 3, 0, 2, 2, -3, -3, -3, 0, 0, 0, 0, -2]"
+    #     1:[[8, 30]]:2:[[3, 38], [5, 31], [11, 34]]:d:[3, 3, 3, 3, 3, 3, 0, 2, -3, -3, -3, -3, -3, 0, 0, 0], 1, 3=(1, '3', -3)
+    #, 1, 3=(1, '3', -3))"
+    board = curl.boardFromString(bs)
+    curl.getNextState(board, 1, 3)

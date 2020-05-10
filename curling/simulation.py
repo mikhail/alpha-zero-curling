@@ -15,12 +15,13 @@ class SimulationException(Exception): pass
 
 class ShooterNotFound(SimulationException): pass
 
+
 class Timeout(SimulationException): pass
 
 
 def getNextStoneId(board):
     """Return stone number as it would be in physical game."""
-
+    # FIXME Does not consider out of play stones? or does it...
     data_row = utils.getData(board)
     for i in range(8):
         if data_row[i] == c.P1_NOT_THROWN: return i
@@ -29,7 +30,8 @@ def getNextStoneId(board):
     log.error('Failure:')
     log.error('Stone locations: %s', utils.getStoneLocations(board))
     log.error('Data row: %s', data_row)
-    raise SimulationException('Id requested for 9th rock.')
+    log.error('Id requested for 9th rock.')
+    raise SimulationException()
 
 
 class Simulation:
@@ -68,6 +70,8 @@ class Simulation:
     def resetBoard(self):
         for stone in self.getStones():
             self.space.remove(stone.body, stone)
+        self.space.p1_removed_stones = 0
+        self.space.p2_removed_stones = 0
 
     def addStone(self, color: str, x, y, action=None, stone_id=None):
         stone = utils.newStone(color)

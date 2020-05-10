@@ -41,7 +41,7 @@ class Arena():
         curPlayer = 1
         board = self.game.getInitBoard()
         total_moves = 16  # Curling
-        progressbar = tqdm(total=total_moves)
+        progressbar = tqdm(total=total_moves, disable=verbose)  # Don't want a bar when pitting
         it = 0
         while self.game.getGameEnded(board, curPlayer) == 0:
             it += 1

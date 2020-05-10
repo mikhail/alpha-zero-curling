@@ -27,12 +27,12 @@ class HumanPlayer():
             move = input()
             weight, handle, broom = move.split(' ')
             try:
-                action = curling.constants.utils.getAction1
+                action = utils.getAction(handle, weight, broom)
                 break
             except KeyboardInterrupt:
                 raise
-            except:
-                print('Invalid move')
+            except Exception as e:
+                print('Invalid move: ', e)
                 print('Weights: ', curling.constants.WEIGHT_FT.keys())
                 print('Brooms: %s - %s' % (min(curling.constants.BROOMS), max(curling.constants.BROOMS)))
         return action

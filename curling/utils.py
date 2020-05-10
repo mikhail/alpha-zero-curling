@@ -178,6 +178,7 @@ def stone_velocity(body, gravity, damping, dt):
     F_curl = getCurlingForce(body)
     body.force -= F_curl
 
+    # TODO: It appears that the following block has no effect
     direction = 1 if body.angular_velocity > 0 else -1
     angular_damping = 0.0001
     if abs(body.angular_velocity) > angular_damping:

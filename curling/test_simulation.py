@@ -72,6 +72,33 @@ def test_simulation_getNextStoneId():
     assert i == 9  # for blue
 
 
+def test_simulation_getNextStoneId_with_removed():
+    curl = game.CurlingGame()
+    curl.sim.space.p1_removed_stones = 2
+    curl.sim.space.p2_removed_stones = 2
+    r = utils.STONE_RADIUS
+
+    # TODO: But what if stones aren't added in alternating order?!
+    # TODO Still doesn't explain 9th-rock failure
+    i = simulation.getNextStoneId(curl.sim.getBoard())
+    assert i == 2  # for red
+
+    curl.sim.addStone(c.P1_COLOR, 0, utils.HOG_LINE)
+
+    i = simulation.getNextStoneId(curl.sim.getBoard())
+    assert i == 10  # for blue
+
+    curl.sim.addStone(c.P2_COLOR, 2 * r, utils.HOG_LINE + 2 * r)
+
+    i = simulation.getNextStoneId(curl.sim.getBoard())
+    assert i == 3  # for red
+
+    curl.sim.addStone(c.P1_COLOR, 4 * r, utils.HOG_LINE + 4 * r)
+
+    i = simulation.getNextStoneId(curl.sim.getBoard())
+    assert i == 11  # for blue
+
+
 
 @log_handler.on_error()
 def test_coordinates_too_similar():
