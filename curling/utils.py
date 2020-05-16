@@ -136,7 +136,7 @@ def realToBoard(x, y) -> (int, int):
     bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION - ADJUSTER
     by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION - ADJUSTER
     ix, iy = int(bx), int(by)
-    # log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
+    log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
     return ix, iy
 
 
@@ -207,10 +207,12 @@ def addBoundaries(space: Space):
     left = -ICE_WIDTH / 2
     right = ICE_WIDTH / 2
     # stones are removed when they exit the actual backline.
-    backline = dist(feet=130) + 2 * STONE_RADIUS
+    backline = BACKLINE_ELIM - 1  # Removing a single point to help with rocks eliminating at board edge.
     log.debug(f'Boundaries (left, right, backline) = {left, right, backline}')
-    log.debug(
-        f'Adjusted Boundaries (left, right, backline) = {left + STONE_RADIUS, right - STONE_RADIUS, backline + 2 * STONE_RADIUS}')
+    log.debug('Adjusted Boundaries (left, right, backline) = '
+              f'{left + STONE_RADIUS, right - STONE_RADIUS, backline - STONE_RADIUS}')
+    log.debug('Board id Boundaries (left, right, backline) = '
+              f'{realToBoard(left + STONE_RADIUS,0), realToBoard(right - STONE_RADIUS,0), realToBoard(0,backline - STONE_RADIUS)}')
     w1, w2, w3 = (
         pymunk.Segment(space.static_body, (left, 0), (left, backline), 1),
         pymunk.Segment(space.static_body, (left, backline), (right, backline), 1),

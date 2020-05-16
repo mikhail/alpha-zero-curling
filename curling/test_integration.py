@@ -266,3 +266,13 @@ def test_ninth_rock_requested():
     #, 1, 3=(1, '3', -3))"
     board = curl.boardFromString(bs)
     curl.getNextState(board, 1, 3)
+
+
+@log_handler.on_error()
+def test_index_out_of_bounds():
+    # Not sure why this breaks. Solved by changing backline Boundary to be offset by -1.
+    curl = game.CurlingGame()
+
+    bs = "1:[[23, 51], [28, 37]]:2:[[23, 61]]:d:[3, 3, 3, 3, 3, 0, 0, 2, -3, -3, -3, -3, -3, -3, 0, -2]"
+    board = curl.boardFromString(bs)
+    curl.getNextState(board, 1, 180)  # 180=(-1, 'control', 5)
