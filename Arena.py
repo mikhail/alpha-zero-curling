@@ -78,16 +78,16 @@ class Arena():
             twoWon: games won by player2
             draws:  games won by nobody
         """
-        p1_score = 0
-        p2_score = 0
+        p1_wins = 0
+        p2_wins = 0
         for _ in tqdm(range(math.ceil(num / 2)), desc="Arena.playGames p1/p2"):
             res = self.playGame(verbose=verbose)
             if res == 0:
                 raise Exception('WHOA playGame ended before end of game. res=%s' % res)
-            if res > 0:
-                p1_score += res
-            else:
-                p2_score -= res
+            if res == 1:
+                p1_wins += 1
+            if res == -1:
+                p2_wins += 1
 
         self.player1, self.player2 = self.player2, self.player1
 
@@ -95,9 +95,9 @@ class Arena():
             res = self.playGame(verbose=verbose)
             if res == 0:
                 raise Exception('WHOA playGame ended before end of game. res=%s' % res)
-            if res > 0:
-                p2_score += res
-            else:
-                p1_score -= res
+            if res == 1:
+                p2_wins += 1
+            if res == -1:
+                p1_wins += 1
 
-        return p1_score, p2_score
+        return p1_wins, p2_wins

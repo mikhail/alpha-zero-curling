@@ -79,8 +79,8 @@ class CurlingGame:
 
         if len(in_house) == 0:
             # Draw is better than being forced to 1
-            log.debug('getGameEnded -> 0.5')
-            return 0.5
+            log.debug('getGameEnded -> draw')
+            return 0.00001
 
         win_color = in_house[0].color
         win_count = 0  # add test
@@ -94,15 +94,15 @@ class CurlingGame:
 
         if hammer_won:
             if win_count == 1:
-                # This is almost as bad as losing
-                return -0.5
+                # This is as bad as losing
+                return -1
             # 2 or more stones is a great win
-            log.debug('getGameEnded -> %s', win_count)
-            return win_count
+            log.debug('getGameEnded -> %s -> 1', win_count)
+            return 1
 
         # a steal is always good
-        log.debug('getGameEnded -> %s', -win_count)
-        return win_count * -1
+        log.debug('getGameEnded -> %s -> -1', -win_count)
+        return -1
 
     def _thrownStones(self, data_row):
         stones = self.sim.getStones()
