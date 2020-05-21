@@ -157,6 +157,36 @@ class CurlingGame:
         assert string == cls.stringRepresentation(board)
         return board
 
+    @classmethod
+    def boardFromSchema(cls, data: dict):
+        board = cls.getInitBoard()
+        log.debug(f'Creating a board of size: {utils.getBoardSize()}')
+        team1 = [s for s in data['stones'] if s['color'] == 'red']
+        team2 = [s for s in data['stones'] if s['color'] == 'blue']
+        game_data = data['game']
+        data_row = board[-1]
+        data_row[0:game_data['red']] = c.P1_OUT_OF_PLAY
+        data_row[8:8+game_data['blue']] = c.P2_OUT_OF_PLAY
+        sid = 0
+        for s in team1:
+            x, y = utils.realToBoard(s['x'] * 12, s['y'] * 12)  # web data is in feet, we're in inches
+            log.debug(f'Adding "{c.P1}" @ {x, y}')
+            board[x, y] = c.P1
+            data_row[sid] = c.EMPTY
+            sid += 1
+
+        sid = 8
+        for s in team2:
+            x, y = utils.realToBoard(s['x'] * 12, s['y'] * 12)  # web data is in feet, we're in inches
+            log.debug(f'Adding "{c.P2}" @ {x, y}')
+            board[x, y] = c.P2
+            data_row[sid] = c.EMPTY
+            sid += 1
+
+        str_repr = cls.stringRepresentation(board)
+        log.debug('Back to string: %s' % str_repr)
+        return board
+
     @staticmethod
     def display(board):
         print(" -----------------------")

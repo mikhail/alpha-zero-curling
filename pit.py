@@ -26,11 +26,11 @@ hp = HumanPlayer(game).play
 n1 = NNet(game)
 n1.load_checkpoint('./curling/data_image/', 'checkpoint_best.pth.tar')
 
-args1 = dotdict({'numMCTSSims': 10, 'cpuct':1.0})
+args1 = dotdict({'numMCTSSims': 2, 'cpuct':1.0})
 mcts1 = MCTS(game, n1, args1)
 n1p = lambda x: np.argmax(mcts1.getActionProb(x, temp=0))
 
 
-arena = Arena.Arena(player1=hp, player2=hp, game=game, display=CurlingGame.display)
+arena = Arena.Arena(player1=hp, player2=n1p, game=game, display=CurlingGame.display)
 
 print(arena.playGames(2, verbose=True))

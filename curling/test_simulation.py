@@ -114,7 +114,8 @@ def test_coordinates_too_similar():
 
 
 @log_handler.on_error()
-def test_simulation_getBoard():
+def test_simulation_getBoard_is_symmetric():
+    """Create a board then convert it to simulation and back to board."""
     curl = game.CurlingGame()
 
     setupBoard = curl.sim.getBoard()

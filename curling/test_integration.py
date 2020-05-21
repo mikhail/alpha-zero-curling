@@ -128,105 +128,6 @@ def test_stone_lands_on_data_row():
     curl.getNextState(board, 1, 54)
 
 
-def test_infinite_run():
-    """
-    The spin of these two rocks caused infinite curl because body.angular_velocity was not subject to friction.
-    """
-
-    bs = "1:[]:2:[[13, 36]]:d:[3, 0, 0, 0, 2, 2, 2, 2, -3, -3, 0, 0, -2, -2, -2, -2]"
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-
-    curl.getNextState(board, 1, 50)
-
-
-def test_infinite_run_2():
-    bs = "1:[[18, 38]]:2:[]:d:[3, 3, 3, 3, 3, 0, 0, 2, -3, -3, -3, -3, -3, -3, 0, -2]"
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 33)  # 33=(1, '5', 1))"
-
-
-def test_infinite_run_3():
-    bs = "1:[]:2:[[10, 39]]:d:[3, 2, 2, 2, 2, 2, 2, 2, 0, -2, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 69)  # 69=(1, '8', -2))
-
-
-def test_infinite_run_4():
-    bs = "1:[[30, 44]]:2:[]:d:[0, 2, 2, 2, 2, 2, 2, 2, 0, -2, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 123)  # 123=(-1, '5', 0)
-
-
-def test_infinite_run_5():
-    bs = "1:[[0, 46], [1, 40]]:2:[[3, 46], [5, 35]]:d:[3, 0, 0, 2, 2, 2, 2, 2, -3, -3, 0, 0, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 33)  # (1, '5', 1)
-
-
-def test_infinite_run_6():
-    bs = "1:[[16, 41]]:2:[[15, 36]]:d:[3, 0, 2, 2, 2, 2, 2, 2, -3, 0, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 143)  # (-1, '7', -6)
-
-
-def test_infinite_run_7():
-    bs = "1:[]:2:[[12, 34]]:d:[2, 2, 2, 2, 2, 2, 2, 2, 0, -2, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 60)  # (1, '7', 2)
-
-
-def test_infinite_run_8():
-    bs = "1:[]:2:[[8, 43]]:d:[2, 2, 2, 2, 2, 2, 2, 2, 0, -2, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 117)  # (-1, '5', -6)
-
-
-def test_infinite_run_9():
-    bs = "1:[[11, 49]]:2:[[0, 43], [24, 43]]:d:[0, 2, 2, 2, 2, 2, 2, 2, 0, 0, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 124)  # (-1, '5', 1)
-
-
-def test_infinite_run_10():
-    bs = "1:[[5, 53]]:2:[[20, 39]]:d:[0, 2, 2, 2, 2, 2, 2, 2, 0, -2, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 48)  # (1, '6', 3)
-
-
-def test_infinite_run_11():
-    bs = "1:[]:2:[[32, 45]]:d:[2, 2, 2, 2, 2, 2, 2, 2, 0, -2, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 141)  # (-1, '6', 5)
-
-
-def test_infinite_run_12():
-    bs = "1:[[26, 55]]:2:[[27, 50]]:d:[0, 2, 2, 2, 2, 2, 2, 2, 0, -2, -2, -2, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 165)  # (-1, '8', 3)
-
-
 def test_it_curls_left():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -253,26 +154,33 @@ def test_it_curls_right():
 
 @log_handler.on_error()
 def test_ninth_rock_requested():
+    c.BOARD_RESOLUTION = 1  # Just so that values like [3,33] work
     curl = game.CurlingGame()
 
-    bs = "1:[[8, 30]]:2:[[3, 38], [5, 31], [11, 34]]:d:[3, 3, 3, 3, 3, 3, 0, 2, -3, -3, -3, -3, -3, 0, 0, 0]"
-    # , 1, 3 = (1, '3', -3))
+    bs = "1:[[8, 30]]:2:[[3, 33], [5, 31], [11, 34]]:d:[3, 3, 3, 3, 3, 3, 0, 2, -3, -3, -3, -3, -3, 0, 0, 0]"
     board = curl.boardFromString(bs)
     curl.getNextState(board, 1, 3)
 
-
     bs = "1:[[8, 30]]:2:[[4, 33], [6, 37], [7, 39], [11, 34]]:d:[3, 3, 3, 3, 3, 0, 2, 2, -3, -3, -3, 0, 0, 0, 0, -2]"
-    #     1:[[8, 30]]:2:[[3, 38], [5, 31], [11, 34]]:d:[3, 3, 3, 3, 3, 3, 0, 2, -3, -3, -3, -3, -3, 0, 0, 0], 1, 3=(1, '3', -3)
-    #, 1, 3=(1, '3', -3))"
+
     board = curl.boardFromString(bs)
     curl.getNextState(board, 1, 3)
 
 
 @log_handler.on_error()
 def test_index_out_of_bounds():
+    # TODO: Fix "box" Backline to include stone buffer
     # Not sure why this breaks. Solved by changing backline Boundary to be offset by -1.
     curl = game.CurlingGame()
 
     bs = "1:[[23, 51], [28, 37]]:2:[[23, 61]]:d:[3, 3, 3, 3, 3, 0, 0, 2, -3, -3, -3, -3, -3, -3, 0, -2]"
     board = curl.boardFromString(bs)
     curl.getNextState(board, 1, 180)  # 180=(-1, 'control', 5)
+
+# @log_handler.on_error()
+# def test_wrong_next_player():
+#     curl = game.CurlingGame()
+#
+#     bs = "1:[[5, 50], [21, 45]]:2:[[1, 51], [30, 61]]:d:[3, 3, 3, 0, 0, 2, 2, 2, -3, -3, 0, 0, -2, -2, -2, -2]"
+#     board = curl.boardFromString(bs)
+#     curl.getValidMoves(board, 1)

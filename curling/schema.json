@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "http://example.com/example.json",
+  "type": "object",
+  "title": "Curling game state",
+  "description": "A fully descriptive snapshot of a game",
+  "default": {},
+  "required": [
+    "stones",
+    "game"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "stones": {
+      "$id": "#/properties/stones",
+      "type": "array",
+      "description": "Location of stones in play.",
+      "default": [],
+      "additionalItems": true,
+      "items": {
+        "type": "object",
+        "default": {},
+        "required": [
+          "color",
+          "x",
+          "y"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "color": {
+            "type": "string"
+          },
+          "x": {
+            "type": "number",
+            "description": "X-axis value, in feet, with zero being center line, negative being Skip's left.",
+            "default": 0.0
+          },
+          "y": {
+            "type": "number",
+            "description": "Y-axis value, in feet, with zero being the hog line, and 21 being tee line.",
+            "default": 0.0,
+            "examples": [
+              1,
+              21.5,
+              27.0
+            ]
+          },
+          "angle": {
+            "type": "number",
+            "description": "Optional value to identify which way the handle is facing in radians. ",
+            "default": 0.0,
+            "examples": [
+              1.1
+            ]
+          },
+          "number": {
+            "type": "integer",
+            "description": "Optional rock number 1 through 8.",
+            "default": 1,
+            "examples": [
+              1,
+              8
+            ]
+          }
+        }
+      }
+    },
+    "game": {
+      "type": "object",
+      "description": "All the data about the game and the particular end.",
+      "default": {},
+      "required": [
+        "end"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "end": {
+          "type": "integer",
+          "description": "The number of this end/round.",
+          "default": 1,
+          "examples": [
+            1,8,10
+          ]
+        },
+        "score": {
+          "type": "array",
+          "description": "Array of team color and score, one entry per end. Score 0 for blank.",
+          "default": [],
+          "examples": [
+            ["red", 2], ["blue", 1], ["red", 2], ["blue", 0]
+          ]
+        },
+        "firstHammer" :  {
+          "type":  "string",
+          "description": "Color of the team that had hammer in first end.",
+          "examples": ["red", "blue"]
+        }
+      }
+    }
+  }
+}

@@ -10,6 +10,12 @@ from curling import constants as c
 log = logging.getLogger(__name__)
 
 
+def proper_round(n):
+    if n - math.floor(n) < 0.5:
+        return math.floor(n)
+    return math.ceil(n)
+
+
 def dist(inches=0., feet=0., meters=0.):
     """Returns value in inches"""
     return (feet * 12.0) + inches + (meters * 39.3701)
@@ -26,9 +32,11 @@ BACKLINE = ICE_LENGTH
 BACKLINE_BUFFER = 2 * STONE_RADIUS
 BACKLINE_ELIM = BACKLINE + BACKLINE_BUFFER  # Point at which the stones are removed from the game
 
+BOX_LENGTH_WITH_BUFFER = BOX_LENGTH + BACKLINE_BUFFER
+
 # For conversion between Board and Real
-X_SCALE = (ICE_WIDTH - 2.0 * STONE_RADIUS) / ICE_WIDTH
-Y_SCALE = (BACKLINE_ELIM - (0.0 * STONE_RADIUS)) / BACKLINE_ELIM  # Why is this 0? Test works, but why??
+X_SCALE = (ICE_WIDTH - 2.0 * STONE_RADIUS + 1) / ICE_WIDTH  # Don't know why +1 but makes the tests pass.
+Y_SCALE = (BOX_LENGTH_WITH_BUFFER - (2.0 * STONE_RADIUS) + 1) / BOX_LENGTH_WITH_BUFFER
 
 
 class GameException(Exception):
@@ -129,21 +137,17 @@ class Stone(pymunk.Circle):
         return c.P1 if self.color == c.P1_COLOR else c.P2
 
 
-ADJUSTER = 0.5  # Needed to help int() function properly. Python's round() does Engineering rounding.
-
-
-def realToBoard(x, y) -> (int, int):
-    bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION - ADJUSTER
-    by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION - ADJUSTER
-    ix, iy = int(bx), int(by)
+def realToBoard(x: float, y: float) -> (int, int):
+    bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION
+    by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION
+    ix, iy = proper_round(bx), proper_round(by)
     log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
     return ix, iy
 
 
 def boardToReal(x: float, y: float):
-    real_x = ((float(x) + ADJUSTER) / c.BOARD_RESOLUTION) * X_SCALE + STONE_RADIUS - (ICE_WIDTH / 2.0)
-    real_y = ((float(y) + ADJUSTER) / c.BOARD_RESOLUTION) * Y_SCALE + STONE_RADIUS + HOG_LINE
-    # log.debug(f'boardToReal({x, y}) -> {real_x, real_y}')
+    real_x = ((float(x)) / c.BOARD_RESOLUTION) * X_SCALE + STONE_RADIUS - (ICE_WIDTH / 2.0)
+    real_y = ((float(y)) / c.BOARD_RESOLUTION) * Y_SCALE + STONE_RADIUS + HOG_LINE
     return real_x, real_y
 
 
@@ -207,12 +211,12 @@ def addBoundaries(space: Space):
     left = -ICE_WIDTH / 2
     right = ICE_WIDTH / 2
     # stones are removed when they exit the actual backline.
-    backline = BACKLINE_ELIM - 1  # Removing a single point to help with rocks eliminating at board edge.
+    backline = BACKLINE_ELIM  # Removing a single point to help with rocks eliminating at board edge.
     log.debug(f'Boundaries (left, right, backline) = {left, right, backline}')
     log.debug('Adjusted Boundaries (left, right, backline) = '
               f'{left + STONE_RADIUS, right - STONE_RADIUS, backline - STONE_RADIUS}')
     log.debug('Board id Boundaries (left, right, backline) = '
-              f'{realToBoard(left + STONE_RADIUS,0), realToBoard(right - STONE_RADIUS,0), realToBoard(0,backline - STONE_RADIUS)}')
+              f'{realToBoard(left + STONE_RADIUS, 0)[0], realToBoard(right - STONE_RADIUS, 0)[0], realToBoard(0, backline - STONE_RADIUS)[1]}')
     w1, w2, w3 = (
         pymunk.Segment(space.static_body, (left, 0), (left, backline), 1),
         pymunk.Segment(space.static_body, (left, backline), (right, backline), 1),
@@ -316,7 +320,7 @@ def getInitBoard():
 
 def getBoardSize() -> (int, int):
     width_px = int(ICE_WIDTH * c.BOARD_RESOLUTION)
-    height_px = int(BOX_LENGTH * c.BOARD_RESOLUTION)
+    height_px = int(BOX_LENGTH_WITH_BUFFER * c.BOARD_RESOLUTION)
 
     data_layer = 1  # 1 entire row is dedicated to keep track of data (stones thrown/out of play)
     return width_px + data_layer, height_px

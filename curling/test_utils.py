@@ -1,5 +1,6 @@
 import numpy as np
 
+import log_handler
 from curling import constants as c
 from curling import utils
 
@@ -40,6 +41,7 @@ def test_board_to_real():
     assert np.isclose(ry, ey, rtol=c.BOARD_RESOLUTION)
 
 
+@log_handler.on_error()
 def test_real_to_board():
     c.BOARD_RESOLUTION = 1
 
@@ -107,3 +109,12 @@ def test_five_rock_rule_not_all_inplay():
     space.p2_removed_stones = 2
     space.shooter_color = c.P2_COLOR
     assert utils.five_rock_rule(takeout, space) is False
+
+
+def test_proper_round():
+    assert utils.proper_round(0) == 0
+    assert utils.proper_round(0.4999999) == 0
+    assert utils.proper_round(0.5) == 1
+    assert utils.proper_round(0.500000001) == 1
+    assert utils.proper_round(0.999999999) == 1
+    assert utils.proper_round(1.5) == 2
