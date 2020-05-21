@@ -22,20 +22,19 @@ torch.set_num_interop_threads(12)
 torch.set_num_threads(12)
 
 args = dotdict({
-    'numIters': 100,
-    'numEps': 4,  # Number of complete self-play games to simulate during a new iteration.
+    'numIters': 20,
+    'numEps': 10,  # Number of complete self-play games to simulate during a new iteration.
     'tempThreshold': 4,  # Number of moves to "explore" before choosing optimal moves
     'updateThreshold': 0.51,
     # During arena playoff, new neural net will be accepted if threshold or more of games are won.
-    'maxlenOfQueue': 1000,  # Number of game examples to train the neural networks.
-    'numMCTSSims': 90,  # Number of games moves for MCTS to simulate.
-    'arenaCompare': 10,  # Number of games to play during arena play to determine if new net will be accepted.
-    'cpuct': 2,
+    'maxlenOfQueue': 500,  # Number of game examples to train the neural networks.
+    'numMCTSSims': 45,  # Number of games moves for MCTS to simulate.
+    'arenaCompare': 8,  # Number of games to play during arena play to determine if new net will be accepted.
+    'cpuct': 1,
 
-    'checkpoint': './curling/data_image/',
-    'load_folder_file': ('./curling/data_image/', 'checkpoint_best.pth.tar'),
-    'numItersForTrainExamplesHistory': 100,
-
+    'checkpoint': './curling/something_changed/',
+    'load_folder_file': ('./curling/something_changed/', 'checkpoint_best.pth.tar'),
+    'numItersForTrainExamplesHistory': 500,
 })
 
 args['load_model'] = path.exists(''.join(args['load_folder_file']))
