@@ -110,7 +110,7 @@ def test_gameEnded_NoStonesInPlay():
     board[-1][8:16] = [c.P2_OUT_OF_PLAY] * 8
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == 0.5  # Draw
+    assert ended == 0.00001  # Draw
 
 
 @log_handler.on_error()
@@ -129,7 +129,7 @@ def test_gameEnded_HammerWinsBy1():
 
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == -0.5
+    assert ended == -1
 
 
 def test_gameEnded_SlightlyOffCenter_y_1():
@@ -148,7 +148,7 @@ def test_gameEnded_SlightlyOffCenter_y_1():
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == -0.5
+    assert ended == -1
 
 
 def test_gameEnded_SlightlyOffCenter_y_2():
@@ -167,7 +167,7 @@ def test_gameEnded_SlightlyOffCenter_y_2():
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == -0.5
+    assert ended == -1
 
 
 def test_gameEnded_y_OneCloserThanOther():
@@ -189,7 +189,7 @@ def test_gameEnded_y_OneCloserThanOther():
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == -0.5
+    assert ended == -1
 
 
 def test_gameEnded_SlightlyOffCenter_x_1():
@@ -208,7 +208,7 @@ def test_gameEnded_SlightlyOffCenter_x_1():
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == -0.5, (np.argwhere(board == c.P2), (x, y), stone.body.position)
+    assert ended == -1, (np.argwhere(board == c.P2), (x, y), stone.body.position)
 
 
 def test_gameEnded_SlightlyOffCenter_x_2():
@@ -227,7 +227,7 @@ def test_gameEnded_SlightlyOffCenter_x_2():
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == -0.5
+    assert ended == -1
 
 
 def test_gameEnded_x_OneCloserThanOther():
@@ -249,7 +249,7 @@ def test_gameEnded_x_OneCloserThanOther():
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
 
-    assert ended == -0.5
+    assert ended == -1
 
 
 def test_gameEnded_OpponentWinsBy1():

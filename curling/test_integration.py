@@ -169,18 +169,18 @@ def test_ninth_rock_requested():
 
 @log_handler.on_error()
 def test_index_out_of_bounds():
-    # TODO: Fix "box" Backline to include stone buffer
-    # Not sure why this breaks. Solved by changing backline Boundary to be offset by -1.
     curl = game.CurlingGame()
 
     bs = "1:[[23, 51], [28, 37]]:2:[[23, 61]]:d:[3, 3, 3, 3, 3, 0, 0, 2, -3, -3, -3, -3, -3, -3, 0, -2]"
     board = curl.boardFromString(bs)
     curl.getNextState(board, 1, 180)  # 180=(-1, 'control', 5)
 
-# @log_handler.on_error()
-# def test_wrong_next_player():
-#     curl = game.CurlingGame()
-#
-#     bs = "1:[[5, 50], [21, 45]]:2:[[1, 51], [30, 61]]:d:[3, 3, 3, 0, 0, 2, 2, 2, -3, -3, 0, 0, -2, -2, -2, -2]"
-#     board = curl.boardFromString(bs)
-#     curl.getValidMoves(board, 1)
+
+@log_handler.on_error()
+def test_index_out_of_bounds_2():
+    """Stone nearly touching the backline rounds up to value of board max + 1"""
+    curl = game.CurlingGame()
+
+    bs = "1:[[7, 41], [19, 50], [23, 37], [26, 45]]:2:[[7, 50], [30, 52]]:d:[3, 3, 3, 0, 0, 0, 0, 2, -3, -3, -3, -3, -3, 0, 0, -2]"
+    board = curl.boardFromString(bs)
+    curl.getNextState(board, 1, 87)  # =(1, 'control', 3))
