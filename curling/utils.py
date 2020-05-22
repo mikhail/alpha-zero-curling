@@ -47,6 +47,10 @@ class ShooterNotInGame(GameException):
     """For when the shooter has already been removed from the game."""
 
 
+class NobodysTurn(GameException):
+    """Raise if requesting a turn but all stones are in play."""
+
+
 class Space(pymunk.Space):
 
     def __init__(self, *args, **kwargs):
@@ -348,7 +352,7 @@ def getNextPlayer(board, player=c.P1):
         if data_row[i + 8] == c.P2_NOT_THROWN:
             return -1
 
-    raise GameException("It is nobody's turn. Player: %s Data row: %s" % (player, data_row[0:16]))
+    raise NobodysTurn("It is nobody's turn. Player: %s Data row: %s" % (player, data_row[0:16]))
 
 
 def getData(board: np.ndarray):

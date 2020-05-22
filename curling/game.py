@@ -62,7 +62,12 @@ class CurlingGame:
 
         raise GameException(f'Moves requested for player ({player}) do not match next player ({player_turn})')
 
-    def getGameEnded(self, board, player):
+    def getGameEnded(self, board: np.array, player: int):
+
+        # Convert everything to first-player perspective
+        board = self.getCanonicalForm(board, player)
+        player_color = c.P1_COLOR  # Because of the canonical form
+
         self.sim.setupBoard(board)
         data_row = utils.getData(board)
         log.debug(f'getGameEnded({self.stringRepresentation(board)})')
@@ -82,27 +87,25 @@ class CurlingGame:
             log.debug('getGameEnded -> draw')
             return 0.00001
 
+        win_count = 0
         win_color = in_house[0].color
-        win_count = 0  # add test
         while len(in_house) > win_count and in_house[win_count].color == win_color:
             win_count += 1
 
-        hammer_won = (win_color == c.P2_COLOR)
-
-        log.debug(f'Win count: {win_count}, color: {win_color}, hammer won: {hammer_won}')
         assert win_count > 0
 
-        if hammer_won:
-            if win_count == 1:
-                # This is as bad as losing
-                return -1
-            # 2 or more stones is a great win
-            log.debug('getGameEnded -> %s -> 1', win_count)
-            return 1
 
-        # a steal is always good
-        log.debug('getGameEnded -> %s -> -1', -win_count)
-        return -1
+        we_won = win_color == player_color
+
+        # Ignoring all the fancy logic about hammer or winning by 1 is bad.
+        # Too complicated and possibly invalidates the training model
+        # because same scenario (one rock in house) has different value for hammer vs not.
+        win_value = win_count
+        if not we_won:
+            win_value *= -1
+
+        log.debug('getGameEnded -> %s', win_value)
+        return win_value
 
     def _thrownStones(self, data_row):
         stones = self.sim.getStones()
@@ -160,7 +163,8 @@ class CurlingGame:
     @classmethod
     def boardFromSchema(cls, data: dict):
         board = cls.getInitBoard()
-        log.debug(f'Creating a board of size: {utils.getBoardSize()}')
+        size = utils.getBoardSize()
+        log.debug(f'Creating a board of size: {size}')
         team1 = [s for s in data['stones'] if s['color'] == 'red']
         team2 = [s for s in data['stones'] if s['color'] == 'blue']
         game_data = data['game']
@@ -169,19 +173,25 @@ class CurlingGame:
         data_row[8:8+game_data['blue']] = c.P2_OUT_OF_PLAY
         sid = 0
         for s in team1:
-            x, y = utils.realToBoard(s['x'] * 12, s['y'] * 12)  # web data is in feet, we're in inches
-            log.debug(f'Adding "{c.P1}" @ {x, y}')
-            board[x, y] = c.P1
             data_row[sid] = c.EMPTY
             sid += 1
+            x, y = utils.realToBoard(s['x'] * 12, s['y'] * 12)  # web data is in feet, we're in inches
+            if x >= size[0] or y >= size[1]:
+                log.warning('Board schema adding stone beyond board size. Ignoring the stone.')
+                continue
+            log.debug(f'Adding "{c.P1}" @ {x, y}')
+            board[x, y] = c.P1
 
         sid = 8
         for s in team2:
-            x, y = utils.realToBoard(s['x'] * 12, s['y'] * 12)  # web data is in feet, we're in inches
-            log.debug(f'Adding "{c.P2}" @ {x, y}')
-            board[x, y] = c.P2
             data_row[sid] = c.EMPTY
             sid += 1
+            x, y = utils.realToBoard(s['x'] * 12, s['y'] * 12)  # web data is in feet, we're in inches
+            if x >= size[0] or y >= size[1]:
+                log.warning('Board schema adding stone beyond board size. Ignoring the stone.')
+                continue
+            log.debug(f'Adding "{c.P2}" @ {x, y}')
+            board[x, y] = c.P2
 
         str_repr = cls.stringRepresentation(board)
         log.debug('Back to string: %s' % str_repr)

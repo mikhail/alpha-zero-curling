@@ -83,16 +83,6 @@ def test_CanonicalBoard_changed():
     np.testing.assert_array_equal(canonical, original)
 
 
-# def test_CanonicalBoard_changed_other_player():
-#     curl = game.CurlingGame()
-#     original = curl.getInitBoard()
-#     original[1][1] = 1
-#
-#     canonical = curl.getCanonicalForm(original, -1)
-#
-#     np.testing.assert_array_equal(canonical, original * -1)
-
-
 def test_gameEnded_GameNotStarted():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -127,9 +117,30 @@ def test_gameEnded_HammerWinsBy1():
     curl.sim.addStone(c.P2_COLOR, *game.BUTTON_POSITION)
     board = curl.sim.getBoard()
 
-    ended = curl.getGameEnded(board, 1)
+    ended = curl.getGameEnded(board, c.P2)
 
-    assert ended == -1
+    assert ended == 1
+
+
+@log_handler.on_error()
+def test_gameEnded_HammerWinsBy2():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
+    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
+    board[-1][14:15] = c.EMPTY
+
+    x, y = game.BUTTON_POSITION
+    # Team 2 is winning by 1
+    curl.sim.setupBoard(board)
+    curl.sim.addStone(c.P2_COLOR, x - 5, y - 5)
+    curl.sim.addStone(c.P2_COLOR, x + 5, y + 5)
+    board = curl.sim.getBoard()
+
+    ended = curl.getGameEnded(board, c.P2)
+
+    assert ended == 2  # Win by 2 is good
 
 
 def test_gameEnded_SlightlyOffCenter_y_1():
@@ -170,7 +181,29 @@ def test_gameEnded_SlightlyOffCenter_y_2():
     assert ended == -1
 
 
-def test_gameEnded_y_OneCloserThanOther():
+def test_gameEnded_x_HammerCloser():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
+    board[-1][7] = c.EMPTY
+
+    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
+    board[-1][15] = c.EMPTY
+
+    curl.sim.setupBoard(board)
+
+    x, y = game.BUTTON_POSITION
+    curl.sim.addStone(c.P1_COLOR, x + utils.dist(inches=10), y)
+    curl.sim.addStone(c.P2_COLOR, x - utils.dist(inches=1), y)
+
+    board = curl.sim.getBoard()
+    ended = curl.getGameEnded(board, c.P2)
+
+    assert ended == 1
+
+
+def test_gameEnded_y_HammerCloser():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
@@ -187,9 +220,9 @@ def test_gameEnded_y_OneCloserThanOther():
     curl.sim.addStone(c.P2_COLOR, x, y + utils.dist(inches=1))
 
     board = curl.sim.getBoard()
-    ended = curl.getGameEnded(board, 1)
+    ended = curl.getGameEnded(board, c.P2)
 
-    assert ended == -1
+    assert ended == 1
 
 
 def test_gameEnded_SlightlyOffCenter_x_1():
@@ -206,9 +239,9 @@ def test_gameEnded_SlightlyOffCenter_x_1():
     stone = curl.sim.addStone(c.P2_COLOR, x - utils.dist(inches=1), y)
 
     board = curl.sim.getBoard()
-    ended = curl.getGameEnded(board, 1)
+    ended = curl.getGameEnded(board, c.P2)
 
-    assert ended == -1, (np.argwhere(board == c.P2), (x, y), stone.body.position)
+    assert ended == 1, (np.argwhere(board == c.P2), (x, y), stone.body.position)
 
 
 def test_gameEnded_SlightlyOffCenter_x_2():
@@ -230,28 +263,7 @@ def test_gameEnded_SlightlyOffCenter_x_2():
     assert ended == -1
 
 
-def test_gameEnded_x_OneCloserThanOther():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-
-    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
-    board[-1][7] = c.EMPTY
-
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][15] = c.EMPTY
-
-    curl.sim.setupBoard(board)
-
-    x, y = game.BUTTON_POSITION
-    curl.sim.addStone(c.P1_COLOR, x + utils.dist(inches=10), y)
-    curl.sim.addStone(c.P2_COLOR, x - utils.dist(inches=1), y)
-
-    board = curl.sim.getBoard()
-    ended = curl.getGameEnded(board, 1)
-
-    assert ended == -1
-
-
+@log_handler.on_error()
 def test_gameEnded_OpponentWinsBy1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -266,7 +278,7 @@ def test_gameEnded_OpponentWinsBy1():
     curl.sim.addStone(c.P1_COLOR, *game.BUTTON_POSITION)
     board = curl.sim.getBoard()
 
-    ended = curl.getGameEnded(board, 1)
+    ended = curl.getGameEnded(board, -1)
 
     assert ended == -1
 
