@@ -3,27 +3,24 @@ Provides 1 action that NNet would take given a board input.
 """
 import json
 import logging
+import os
+import time
 
 import coloredlogs
 import jsonschema
 import numpy as np
 import socketio
 
-import log_handler
 import utils
 from MCTS import MCTS
+from curling import constants as c
 from curling import utils as c_utils
 from curling.game import CurlingGame
-from curling import constants as c
 from pytorch.NNet import NNetWrapper as NNet
 
 log = logging.getLogger(__name__)
-stream = logging.StreamHandler()
-stream.setLevel(logging.INFO)
-log.addHandler(stream)
-
 fmt = '%(asctime)s %(filename).5s:%(lineno)s %(funcName)s [%(levelname)s] %(message)s'
-coloredlogs.install(level='INFO', fmt=fmt, logger=log)
+coloredlogs.install(level='INFO', logger=log)
 
 game = CurlingGame()
 
@@ -33,13 +30,22 @@ log.info('Loading checkpoint...')
 n1.load_checkpoint('./curling/data_image/kirill', 'checkpoint_best.pth.tar')
 log.info('Ready! 🚀 ')
 
+AZ_TEAM = int(os.environ.get('AZ_TEAM', '0'))
+assert AZ_TEAM in [0, 1]
+AZ_TEAM_OMO = c.P2 if AZ_TEAM == 0 else c.P1
+AZ_COLOR = 'blue' if AZ_TEAM == 0 else 'red'
+AZ_NAME = f"🧠 AlphaZero ({AZ_COLOR})"
 
-def get_best_action(board, use_mcts=False, player=1):
+
+def get_best_action(board, use_mcts: bool, player: AZ_TEAM_OMO):
     if use_mcts:
-        args1 = utils.dotdict({'numMCTSSims': 100, 'cpuct': 1.0})
+        now = time.time()
+        args1 = utils.dotdict({'numMCTSSims': 10, 'cpuct': 2.0})
         mcts1 = MCTS(game, n1, args1)
         board = game.getCanonicalForm(board, player)
-        best_action = np.argmax(mcts1.getActionProb(board, temp=0))
+        while time.time() - now < 7:  # think for 7 seconds
+            best_action = np.argmax(mcts1.getActionProb(board, temp=0))
+            log.info('Considering the shot: ' + str(c_utils.decodeAction(best_action)))
     else:
         p, v = n1.predict(board)
         best_action = np.argmax(p)
@@ -57,7 +63,7 @@ sio = socketio.Client(logger=False)
 @sio.event
 def connect():
     log.info('connection established')
-    sio.emit('update_name', "🧠 AlphaZero")
+    sio.emit('update_name', AZ_NAME)
 
 
 @sio.event
@@ -71,18 +77,24 @@ def state(data):
     log.info('message received with %s', data)
     jsonschema.validate(data, json.load(open('./curling/schema.json')))
     board = game.boardFromSchema(data)
-    next_player = c_utils.getNextPlayer(board)
+    try:
+        next_player = c_utils.getNextPlayer(board)
+    except c_utils.NobodysTurn:
+        log.warning("Game over.")
+        return
     log.info('Board: %s', game.stringRepresentation(board))
     log.info('Next player: %s', next_player)
-    if next_player != c.P2:
+    if next_player != AZ_TEAM_OMO:
         return
     log.info('Got board. calculating action')
-    action = get_best_action(board, use_mcts=True, player=-1)
-    action['color'] = 'blue'
-    action['handle'] = -0.07
+    sio.emit('update_name', AZ_NAME + " thinking ...")
+    action = get_best_action(board, use_mcts=True, player=AZ_TEAM_OMO)
+    action['color'] = AZ_COLOR
+    action['handle'] *= 0.07
 
     log.info('responding with action: %s' % (action,))
 
+    sio.emit('update_name', AZ_NAME)
     sio.emit('shot', action)
 
 
@@ -92,4 +104,5 @@ def disconnect():
 
 
 sio.connect('http://localhost:3000/?room=/curling.gg/vs_ai')
+# sio.connect('http://curling-socket.herokuapp.com/?room=/vs-ai')
 sio.wait()
