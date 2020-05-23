@@ -135,6 +135,11 @@ class Simulation:
             log.debug(f'Analyzing {stone}')
             x, y = utils.realToBoard(stone.body.position.x, stone.body.position.y)
             team_id = stone.getTeamId()
+            try:
+                board[x][y]
+            except IndexError:
+                log.warning("Rounding error placed a rock outside of bounds. Removing it")
+                continue
 
             if board[x][y] != c.EMPTY:
                 raise SimulationException(f'Space {x, y} occupied by value "{board[x][y]}"')

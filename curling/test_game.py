@@ -318,3 +318,13 @@ def test_gameEnded_edgeCase():
 def test_display():
     curl = game.CurlingGame()
     curl.display(curl.getInitBoard())
+
+
+def test_get_valid_moves():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+    valid = curl.getValidMoves(board, 1)
+
+    assert sum(valid) < len(c.ACTION_LIST)
+    assert sum(valid) > 0
+    assert sum(valid) < len(c.ACTION_LIST)

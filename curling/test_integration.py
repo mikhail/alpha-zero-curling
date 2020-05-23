@@ -177,10 +177,10 @@ def test_index_out_of_bounds():
 
 
 @log_handler.on_error()
-def test_index_out_of_bounds_2():
-    """Stone nearly touching the backline rounds up to value of board max + 1"""
-    curl = game.CurlingGame()
+def test_index_out_of_bounds_3():
+    # 1:[[24, 45], [30, 52]]:2:[[14, 36], [17, 45], [19, 49] , [28, 40]]:d:[3, 3, 3, 3, 0, 0, 2, 2, -3, -3, 0, 0, 0, 0, -2, -2], 1, 174=(-1, 'control', -1)
 
-    bs = "1:[[7, 41], [19, 50], [23, 37], [26, 45]]:2:[[7, 50], [30, 52]]:d:[3, 3, 3, 0, 0, 0, 0, 2, -3, -3, -3, -3, -3, 0, 0, -2]"
+    bs = "1:[[24, 45], [30, 52]]:2:[[14, 36], [17, 45], [19, 49], [28, 40]]:d:[3, 3, 3, 3, 0, 0, 2, 2, -3, -3, 0, 0, 0, 0, -2, -2]"
+    curl = game.CurlingGame()
     board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 87)  # =(1, 'control', 3))
+    curl.getNextState(board, 1, 174)

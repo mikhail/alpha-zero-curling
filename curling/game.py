@@ -20,6 +20,8 @@ class CurlingGame:
 
     def __init__(self):
         self.sim = simulation.Simulation(self.getBoardSize())
+        self.getNextStateCache = {}
+        self.getValidMovesCache = {}
 
     @classmethod
     def getInitBoard(cls):
@@ -35,32 +37,51 @@ class CurlingGame:
 
     def getNextState(self, board, player, action):
         log.debug(f'getNextState({self.stringRepresentation(board)}, {player}, {action}={utils.decodeAction(action)})')
-        self.sim.setupBoard(board)
 
-        assert self._thrownStones(utils.getData(board)) < 16
-        self.sim.setupAction(player, action)
-        self.sim.run()
+        bpa = (self.stringRepresentation(board), player, action)
 
-        next_board = self.sim.getBoard()
-        next_player = 0 - player
-        log.debug(f'  return board, {next_player}')
-        return next_board, next_player
+        if bpa not in self.getNextStateCache:
+            self.sim.setupBoard(board)
+
+            assert self._thrownStones(utils.getData(board)) < 16
+            self.sim.setupAction(player, action)
+            self.sim.run()
+
+            next_board = self.sim.getBoard()
+            next_player = 0 - player
+            result = next_board, next_player
+            self.getNextStateCache[bpa] = result
+
+        return self.getNextStateCache[bpa]
 
     def getValidMoves(self, board, player):
-        self.sim.setupBoard(board)
+        bp = (self.stringRepresentation(board), player)
+        if bp not in self.getValidMovesCache:
+            self.sim.setupBoard(board)
 
-        data_row = utils.getData(board)
+            data_row = utils.getData(board)
 
-        if self._thrownStones(data_row) >= 16:
-            log.error('getValidMoves() requested at game end. Data: %s' % data_row)
-            log.error('Board: strRepr' + self.stringRepresentation(board))
-            raise utils.GameException('getValidMoves requested after game end.')
+            if self._thrownStones(data_row) >= 16:
+                log.error('getValidMoves() requested at game end. Data: %s' % data_row)
+                log.error('Board: strRepr' + self.stringRepresentation(board))
+                raise utils.GameException('getValidMoves requested after game end.')
 
-        player_turn = utils.getNextPlayer(board, player)
-        if player_turn == player:
-            return [1] * self.getActionSize()  # all moves are valid
+            player_turn = utils.getNextPlayer(board, player)
+            if player_turn == player:
+                # Do not cause the same state
+                # Do not lower your score (or increase their score) ... ok this is really hard and frequently not true
+                board_no_data = self.sim.getBoard()[0:-1]
+                all_actions = [1] * self.getActionSize()
+                for i, act in enumerate(c.ACTION_LIST):
+                    newboard, newplayer = self.getNextState(board, player, i)
+                    new_board_no_data = newboard[0:-1]
+                    if np.array_equal(new_board_no_data, board_no_data):
+                        all_actions[i] = 0
+                self.getValidMovesCache[bp] = all_actions
+            else:
+                raise GameException(f'Moves requested for player ({player}) do not match next player ({player_turn})')
 
-        raise GameException(f'Moves requested for player ({player}) do not match next player ({player_turn})')
+        return self.getValidMovesCache[bp]
 
     def getGameEnded(self, board: np.array, player: int):
 
@@ -93,7 +114,6 @@ class CurlingGame:
             win_count += 1
 
         assert win_count > 0
-
 
         we_won = win_color == player_color
 
@@ -170,7 +190,7 @@ class CurlingGame:
         game_data = data['game']
         data_row = board[-1]
         data_row[0:game_data['red']] = c.P1_OUT_OF_PLAY
-        data_row[8:8+game_data['blue']] = c.P2_OUT_OF_PLAY
+        data_row[8:8 + game_data['blue']] = c.P2_OUT_OF_PLAY
         sid = 0
         for s in team1:
             data_row[sid] = c.EMPTY
