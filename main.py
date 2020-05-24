@@ -40,7 +40,7 @@ args = dotdict({
 args['load_model'] = path.exists(''.join(args['load_folder_file']))
 
 
-@log_handler.on_error()
+@log_handler.on_error(capacity=300)
 def main():
     log.info('Cuda enabled: %s', torch.cuda.is_available())
     log.info('Loading Curling...')

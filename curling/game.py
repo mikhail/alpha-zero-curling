@@ -50,7 +50,6 @@ class CurlingGame:
 
         cache_layer = self.getNextStateCache[stone_count]
         if bpa not in cache_layer:
-
             assert self._thrownStones(utils.getData(board)) < 16
             self.sim.setupAction(player, action)
             self.sim.run()
@@ -63,36 +62,34 @@ class CurlingGame:
         return cache_layer[bpa]
 
     def getValidMoves(self, board, player):
-        # TODO: Skip caching getValidMoves -- we use getNextState anyway!
         board, player = self.getCanonicalForm(board, player), 1
 
-        bp = (self.stringRepresentation(board), player)  # Split this into LRU max 180 each move
-        if bp not in self.getValidMovesCache:
-            self.sim.setupBoard(board)
+        self.sim.setupBoard(board)
 
-            data_row = utils.getData(board)
+        data_row = utils.getData(board)
 
-            if self._thrownStones(data_row) >= 16:
-                log.error('getValidMoves() requested at game end. Data: %s' % data_row)
-                log.error('Board: strRepr' + self.stringRepresentation(board))
-                raise utils.GameException('getValidMoves requested after game end.')
+        if self._thrownStones(data_row) >= 16:
+            log.error('getValidMoves() requested at game end. Data: %s' % data_row)
+            log.error('Board: strRepr' + self.stringRepresentation(board))
+            raise utils.GameException('getValidMoves requested after game end.')
 
-            player_turn = utils.getNextPlayer(board, player)
-            if player_turn == player:
-                # Do not cause the same state
-                # Do not lower your score (or increase their score) ... ok this is really hard and frequently not true
-                board_no_data = self.sim.getBoard()[0:-1]
-                all_actions = [1] * self.getActionSize()
-                for i, act in enumerate(c.ACTION_LIST):
-                    newboard, newplayer = self.getNextState(board, player, i)
-                    new_board_no_data = newboard[0:-1]
-                    if np.array_equal(new_board_no_data, board_no_data):
-                        all_actions[i] = 0
-                self.getValidMovesCache[bp] = all_actions
-            else:
-                raise GameException(f'Moves requested for player ({player}) do not match next player ({player_turn})')
+        player_turn = utils.getNextPlayer(board, player)
+        if player_turn == player:
+            # Do not cause the same state
+            board_no_data = self.sim.getBoard()[0:-1]
+            all_actions = [1] * self.getActionSize()
+            for action in range(self.getActionSize()):
+                newboard, newplayer = self.getNextState(board, player, action)
+                new_board_no_data = newboard[0:-1]
+                if np.array_equal(new_board_no_data, board_no_data):
+                    log.debug('Invalid move: %s, %s, %s', (self.stringRepresentation(board), player, action))
+                    all_actions[action] = 0
 
-        return self.getValidMovesCache[bp]
+            if sum(all_actions) == 0:
+                log.error('Entered a bad state: no valid moves.')
+                raise GameException('No valid moves. This shouldnt happen')
+            return all_actions
+        raise GameException(f'Moves requested for player ({player}) do not match next player ({player_turn})')
 
     def getGameEnded(self, board: np.array, player: int):
 
