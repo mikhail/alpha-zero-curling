@@ -25,7 +25,7 @@ class CurlingGame:
 
         self.getNextStateCache: [pylru.lrucache] = []
         for i in range(16):
-            self.getNextStateCache.append(pylru.lrucache(200))
+            self.getNextStateCache.append(pylru.lrucache(2000))
 
     @classmethod
     def getInitBoard(cls):

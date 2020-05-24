@@ -115,7 +115,8 @@ class MCTS():
         best_act = -1
 
         # pick the action with the highest upper confidence bound
-        for a in range(self.game.getActionSize()):
+        action_size = self.game.getActionSize()
+        for a in range(action_size):
             if valids[a]:
                 if (s, a) in self.Qsa:
                     u = self.Qsa[(s, a)] + self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
@@ -126,6 +127,12 @@ class MCTS():
                 if u > cur_best:
                     cur_best = u
                     best_act = a
+
+        if best_act < 0:
+            log.error('Failed to find best action: %s', best_act)
+            log.error('Action size: %s', action_size)
+            log.error('Valid choices: %s', sum(valids))
+            raise Exception('Sanity check failed.')
 
         a = best_act
         next_s, next_player = self.game.getNextState(canonicalBoard, 1, a)
