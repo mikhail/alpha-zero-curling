@@ -2,6 +2,7 @@ import json
 import logging
 
 import numpy as np
+import pylru
 
 from curling import constants as c
 from curling import simulation
@@ -20,8 +21,11 @@ class CurlingGame:
 
     def __init__(self):
         self.sim = simulation.Simulation(self.getBoardSize())
-        self.getNextStateCache = {}
         self.getValidMovesCache = {}
+
+        self.getNextStateCache: [pylru.lrucache] = []
+        for i in range(16):
+            self.getNextStateCache.append(pylru.lrucache(200))
 
     @classmethod
     def getInitBoard(cls):
@@ -38,10 +42,14 @@ class CurlingGame:
     def getNextState(self, board, player, action):
         log.debug(f'getNextState({self.stringRepresentation(board)}, {player}, {action}={utils.decodeAction(action)})')
 
+        self.sim.setupBoard(board)
+
+        # n.b. This is stones IN PLAY not total thrown stones.
+        stone_count = len(self.sim.getStones())  # can be made faster by reading `board` and skip setupBoard
         bpa = (self.stringRepresentation(board), player, action)
 
-        if bpa not in self.getNextStateCache:
-            self.sim.setupBoard(board)
+        cache_layer = self.getNextStateCache[stone_count]
+        if bpa not in cache_layer:
 
             assert self._thrownStones(utils.getData(board)) < 16
             self.sim.setupAction(player, action)
@@ -50,12 +58,15 @@ class CurlingGame:
             next_board = self.sim.getBoard()
             next_player = 0 - player
             result = next_board, next_player
-            self.getNextStateCache[bpa] = result
+            cache_layer[bpa] = result
 
-        return self.getNextStateCache[bpa]
+        return cache_layer[bpa]
 
     def getValidMoves(self, board, player):
-        bp = (self.stringRepresentation(board), player)
+        # TODO: Skip caching getValidMoves -- we use getNextState anyway!
+        board, player = self.getCanonicalForm(board, player), 1
+
+        bp = (self.stringRepresentation(board), player)  # Split this into LRU max 180 each move
         if bp not in self.getValidMovesCache:
             self.sim.setupBoard(board)
 

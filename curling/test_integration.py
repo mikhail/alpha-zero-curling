@@ -1,4 +1,5 @@
 import logging
+from unittest import mock
 
 import numpy as np
 
@@ -184,3 +185,15 @@ def test_index_out_of_bounds_3():
     curl = game.CurlingGame()
     board = curl.boardFromString(bs)
     curl.getNextState(board, 1, 174)
+
+
+@log_handler.on_error()
+@mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)
+def test_wrong_player_requested():
+    curl = game.CurlingGame()
+
+    bs = "1:[]:2:[]:d:[0, 2, 2, 2, 2, 2, 2, 2, -3, 0, -2, -2, -2, -2, -2, -2]"
+    board = curl.boardFromString(bs)
+    ns, np = curl.getNextState(board, 1, 1)
+
+    curl.getValidMoves(ns, np)

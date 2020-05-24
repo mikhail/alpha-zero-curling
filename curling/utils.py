@@ -212,15 +212,11 @@ def calculateVelocityVector(weight: str, broom: int):
 
 def addBoundaries(space: Space):
     log.info('Adding boundaries to space')
-    left = -ICE_WIDTH / 2
-    right = ICE_WIDTH / 2
+    left = -ICE_WIDTH / 2 + STONE_RADIUS
+    right = ICE_WIDTH / 2 - STONE_RADIUS
     # stones are removed when they exit the actual backline.
     backline = BACKLINE_ELIM
     log.debug(f'Boundaries (left, right, backline) = {left, right, backline}')
-    log.debug('Adjusted Boundaries (left, right, backline) = '
-              f'{left + STONE_RADIUS, right - STONE_RADIUS, backline - STONE_RADIUS}')
-    log.debug('Board id Boundaries (left, right, backline) = '
-              f'{realToBoard(left + STONE_RADIUS, 0)[0], realToBoard(right - STONE_RADIUS, 0)[0], realToBoard(0, backline - STONE_RADIUS)[1]}')
     w1, w2, w3 = (
         pymunk.Segment(space.static_body, (left, 0), (left, backline), 1),
         pymunk.Segment(space.static_body, (left, backline), (right, backline), 1),

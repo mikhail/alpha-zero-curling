@@ -1,3 +1,5 @@
+from unittest import mock
+
 import numpy as np
 
 import curling.utils
@@ -320,11 +322,25 @@ def test_display():
     curl.display(curl.getInitBoard())
 
 
+@mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)
 def test_get_valid_moves():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
+
     valid = curl.getValidMoves(board, 1)
 
     assert sum(valid) < len(c.ACTION_LIST)
-    assert sum(valid) > 0
-    assert sum(valid) < len(c.ACTION_LIST)
+    assert sum(valid) == 2
+
+
+@mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)
+def test_get_valid_moves_caches():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    with mock.patch.object(curl, 'getNextState', wraps=curl.getNextState) as spy:
+        curl.getValidMoves(board, 1)
+        assert spy.call_count == 4
+
+        curl.getValidMoves(board, 1)
+        assert spy.call_count == 4  # Call count didn't increase!

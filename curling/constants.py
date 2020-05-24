@@ -42,3 +42,9 @@ ACTION_LIST = tuple(
     for b in BROOMS
 )
 BOARD_RESOLUTION = 0.2  # X pixels per inch. Higher is better but calculations are slower
+SHORT_ACTION_LIST = [
+    (-1, '3', -6),  # Draw
+    (-1, '3', 6),  # Hit wall
+    (1, '7', 6),  # button
+    (-1, 'control', -6)  # through
+]
