@@ -82,7 +82,7 @@ class CurlingGame:
                 newboard, newplayer = self.getNextState(board, player, action)
                 new_board_no_data = newboard[0:-1]
                 if np.array_equal(new_board_no_data, board_no_data):
-                    log.debug('Invalid move: %s, %s, %s', (self.stringRepresentation(board), player, action))
+                    log.debug('Invalid move: %s, %s, %s', self.stringRepresentation(board), player, action)
                     all_actions[action] = 0
 
             if sum(all_actions) == 0:
