@@ -104,7 +104,6 @@ def test_simulation_getNextStoneId_with_removed():
 def test_coordinates_too_similar():
     """Sad test where board -> real -> board yields a collision"""
 
-    # c.BOARD_RESOLUTION = 0.2  # Test fails with 0.1
     curl = game.CurlingGame()
     sim = curl.sim
     board = curl.boardFromString(

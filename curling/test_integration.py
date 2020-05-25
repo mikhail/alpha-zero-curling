@@ -110,7 +110,6 @@ def test_occupying_16th_position():
     This test has a case where a stone ends up being very near a wall but not eliminated.
     This revelaed that realToBoard() conversion needed to be shifted down by "1" before returning.
     """
-    c.BOARD_RESOLUTION = 0.1
     curl = game.CurlingGame()
     board = curl.getInitBoard()
     board[14, 20] = 1
@@ -155,7 +154,6 @@ def test_it_curls_right():
 
 @log_handler.on_error()
 def test_ninth_rock_requested():
-    c.BOARD_RESOLUTION = 1  # Just so that values like [3,33] work
     curl = game.CurlingGame()
 
     bs = "1:[[8, 30]]:2:[[3, 33], [5, 31], [11, 34]]:d:[3, 3, 3, 3, 3, 3, 0, 2, -3, -3, -3, -3, -3, 0, 0, 0]"
@@ -197,3 +195,36 @@ def test_wrong_player_requested():
     ns, np = curl.getNextState(board, 1, 1)
 
     curl.getValidMoves(ns, np)
+
+
+@log_handler.on_error()
+def test_encoded_stone_on_edge():
+    curl = game.CurlingGame()
+    x = (utils.ICE_WIDTH / 2) - (utils.STONE_RADIUS) - 1
+    y = utils.TEE_LINE  # doesn't matter, just not something that eliminates
+    curl.sim.addStone('red', x, y)
+    curl.sim.run()
+    bs = curl.stringRepresentation(curl.sim.getBoard())
+    assert bs.startswith('1:[[33, 51]]:2:[]')
+
+
+@log_handler.on_error()
+def test_encoded_decoded_touches_barrier():
+    """
+    There was a bug where:
+        stone ends really close to the barrier
+        encodes into a value like 33
+        decodes back touching the barrier
+    """
+    curl = game.CurlingGame()
+    x = (utils.ICE_WIDTH / 2) - utils.STONE_RADIUS - 1
+    y = utils.TEE_LINE  # doesn't matter, just not something that eliminates
+    curl.sim.addStone('red', x, y)
+    curl.sim.run()
+    bs = curl.stringRepresentation(curl.sim.getBoard())
+    assert bs.startswith('1:[[33, 51]]:2:[]')
+
+    curl.sim.setupBoard(curl.boardFromString(bs))
+    curl.sim.run()
+    bs = curl.stringRepresentation(curl.sim.getBoard())
+    assert bs.startswith('1:[[33, 51]]:2:[]')

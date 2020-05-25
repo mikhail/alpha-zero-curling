@@ -338,7 +338,7 @@ def test_get_valid_moves_caches():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    with mock.patch.object(curl, 'getNextState', wraps=curl.getNextState) as spy:
+    with mock.patch.object(curl.sim, 'run', wraps=curl.sim.run) as spy:
         curl.getValidMoves(board, 1)
         assert spy.call_count == 4
 

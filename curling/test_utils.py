@@ -1,3 +1,5 @@
+from unittest import mock
+
 import numpy as np
 
 import log_handler
@@ -21,8 +23,6 @@ def test_get_board_repr_teams():
 
 
 def test_board_to_real():
-    c.BOARD_RESOLUTION = 1
-
     left_wall = -utils.ICE_WIDTH / 2
     right_wall = utils.ICE_WIDTH / 2
     board_max_x, board_max_y = utils.getBoardSize()
@@ -42,9 +42,8 @@ def test_board_to_real():
 
 
 @log_handler.on_error()
+@mock.patch('curling.constants.BOARD_RESOLUTION', 1)
 def test_real_to_board():
-    c.BOARD_RESOLUTION = 1
-
     left_wall = -utils.ICE_WIDTH / 2
     right_wall = utils.ICE_WIDTH / 2
     board_max_x, board_max_y = utils.getBoardSize()

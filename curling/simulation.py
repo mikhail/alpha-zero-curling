@@ -90,6 +90,9 @@ class Simulation:
 
             log.debug(f'Setting HWB: {handle, weight, broom}')
             log.debug(f'Velocity: {stone.body.velocity}')
+        else:
+            stone.body.angular_velocity = 0
+            stone.body.velocity = utils.ZERO_VECTOR
 
         log.debug("+ %s" % stone)
         self.space.add(stone.body, stone)
@@ -132,7 +135,6 @@ class Simulation:
         board[-1][8:self.space.p2_removed_stones + 8] = [c.P2_OUT_OF_PLAY] * self.space.p2_removed_stones
 
         for stone in all_stones:
-            log.debug(f'Analyzing {stone}')
             x, y = utils.realToBoard(stone.body.position.x, stone.body.position.y)
             team_id = stone.getTeamId()
             try:

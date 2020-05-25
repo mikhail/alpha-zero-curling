@@ -31,6 +31,7 @@ HOG_LINE = ICE_LENGTH - BOX_LENGTH
 BACKLINE = ICE_LENGTH
 BACKLINE_BUFFER = 2 * STONE_RADIUS
 BACKLINE_ELIM = BACKLINE + BACKLINE_BUFFER  # Point at which the stones are removed from the game
+TEE_LINE = HOG_LINE + dist(feet=21)
 
 BOX_LENGTH_WITH_BUFFER = BOX_LENGTH + BACKLINE_BUFFER
 
@@ -210,17 +211,21 @@ def calculateVelocityVector(weight: str, broom: int):
     return direction * vel
 
 
+ZERO_VECTOR = pymunk.Vec2d(0, 0)
+
+
 def addBoundaries(space: Space):
     log.info('Adding boundaries to space')
-    left = -ICE_WIDTH / 2 + STONE_RADIUS
-    right = ICE_WIDTH / 2 - STONE_RADIUS
+    left = -ICE_WIDTH / 2  # I think it should be offset by 1 radius but tests say otherwise
+    right = ICE_WIDTH / 2
     # stones are removed when they exit the actual backline.
     backline = BACKLINE_ELIM
     log.debug(f'Boundaries (left, right, backline) = {left, right, backline}')
+
     w1, w2, w3 = (
-        pymunk.Segment(space.static_body, (left, 0), (left, backline), 1),
-        pymunk.Segment(space.static_body, (left, backline), (right, backline), 1),
-        pymunk.Segment(space.static_body, (right, backline), (right, 0), 1)
+        pymunk.Segment(space.static_body, (left, 0), (left, backline), 0.1),
+        pymunk.Segment(space.static_body, (left, backline), (right, backline), 0.1),
+        pymunk.Segment(space.static_body, (right, backline), (right, 0), 0.1)
     )
 
     w1.collision_type = 2
@@ -232,6 +237,7 @@ def addBoundaries(space: Space):
 
         if five_rock_rule(stone, local_space):
             local_space.five_rock_rule_violation = True
+            log.debug('Stone %s triggered 5-rock rule violation.', stone)
             return False
         local_space.remove_stone(stone, 'Collision with the wall')
 
@@ -301,6 +307,7 @@ def five_rock_rule(stone, space: Space):
     if total_stones > 5:
         return False
 
+    log.debug('Checking 5 rock rule: stone color vs shooter color: %s, %s', stone.color, space.get_shooter_color())
     if stone.color == space.get_shooter_color():
         return False
 
