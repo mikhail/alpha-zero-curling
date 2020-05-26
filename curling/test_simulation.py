@@ -191,3 +191,8 @@ def test_simulation_getBoard_with_invalid():
     actual = curl.sim.getBoard()
 
     np.testing.assert_array_equal(actual[-1][0:16], expected[-1][0:16])
+
+
+def test_invalid_shooter():
+    curl = game.CurlingGame()
+    curl.sim.addShooterAsInvalid()

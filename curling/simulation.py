@@ -116,7 +116,7 @@ class Simulation:
         raise ShooterNotFound()
 
     def addShooterAsInvalid(self):
-        team = utils.getNextPlayer(self.getBoard())
+        team = utils.getNextPlayer(self.getBoard(), c.P1)
         if team == c.P1:
             self.space.p1_removed_stones += 1
         else:

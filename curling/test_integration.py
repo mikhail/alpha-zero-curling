@@ -67,7 +67,9 @@ def test_5_rock_rule():
     assert shooter.is_guard
 
     # Take it out
-    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, 'control', 4)))
+    with mock.patch.object(curl.sim, 'addShooterAsInvalid', wraps=curl.sim.addShooterAsInvalid) as spy:
+        next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, 'control', 0)))
+        assert spy.call_count == 1
     assert next_player == c.P1
     assert next_board[-1][8] == c.P2_OUT_OF_PLAY
 
