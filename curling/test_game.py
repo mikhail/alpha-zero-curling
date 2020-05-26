@@ -19,7 +19,7 @@ def test_board_is_2d():
 
 def test_getNextPlayer_0():
     curl = game.CurlingGame()
-    player = curling.utils.getNextPlayer(curl.getInitBoard())
+    player = curling.utils.getNextPlayer(curl.getInitBoard(), c.P1)
     assert player == 1
 
 
@@ -27,7 +27,7 @@ def test_getNextPlayer_1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
     board[-1][0] = c.EMPTY
-    player = curling.utils.getNextPlayer(board)
+    player = curling.utils.getNextPlayer(board, c.P1)
     assert player == -1
 
 
@@ -37,7 +37,7 @@ def test_getNextPlayer_2():
     board[-1][0] = c.EMPTY
     board[-1][8] = c.EMPTY
 
-    player = curling.utils.getNextPlayer(board)
+    player = curling.utils.getNextPlayer(board, c.P1)
     assert player == 1
 
 
@@ -49,7 +49,7 @@ def test_getNextPlayer_3():
 
     board[-1][1] = c.EMPTY
 
-    player = curling.utils.getNextPlayer(board)
+    player = curling.utils.getNextPlayer(board, c.P1)
     assert player == -1
 
 
@@ -62,17 +62,22 @@ def test_getNextPlayer_4():
     board[-1][1] = c.EMPTY
     board[-1][9] = c.EMPTY
 
-    player = curling.utils.getNextPlayer(board)
+    player = curling.utils.getNextPlayer(board, c.P1)
     assert player == 1
 
 
-# def test_CanonicalBoard_default():
-#     curl = game.CurlingGame()
-#     original = curl.getInitBoard()
-#
-#     canonical = curl.getCanonicalForm(original, -1)
-#
-#     np.testing.assert_array_equal(canonical, original * -1)
+def test_getNextPlayer_4_canonical():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+    board[-1][0] = c.EMPTY
+    board[-1][8] = c.EMPTY
+
+    board[-1][1] = c.EMPTY
+    board[-1][9] = c.EMPTY
+
+    canon = curl.getCanonicalForm(board, c.P2)
+    player = curling.utils.getNextPlayer(canon, c.P2)
+    assert player == -1
 
 
 def test_CanonicalBoard_changed():

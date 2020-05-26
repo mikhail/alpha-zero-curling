@@ -128,6 +128,7 @@ class Simulation:
     def getBoard(self):
         board = utils.getInitBoard()
         all_stones = list(self.getStones())
+
         p1_stone_id = self.space.p1_removed_stones
         p2_stone_id = self.space.p2_removed_stones
 
@@ -141,6 +142,15 @@ class Simulation:
                 board[x][y]
             except IndexError:
                 log.warning("Rounding error placed a rock outside of bounds. Removing it")
+                if team_id == c.P1:
+                    log.warning('Marking p1 stone out of play')
+                    board[-1][p1_stone_id] = c.P1_OUT_OF_PLAY
+                    p1_stone_id += 1
+
+                if team_id == c.P2:
+                    log.warning('Marking p2 stone out of play')
+                    board[-1][p2_stone_id + 8] = c.P2_OUT_OF_PLAY
+                    p2_stone_id += 1
                 continue
 
             if board[x][y] != c.EMPTY:

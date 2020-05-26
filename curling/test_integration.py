@@ -61,6 +61,7 @@ def test_5_rock_rule():
 
     # Set up a guard
     next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 6)))
+    assert next_player == c.P2
     shooter = curl.sim.getStones()[0]
     shooter.updateGuardValue()  # We normally only do this during addStone()
     assert shooter.is_guard

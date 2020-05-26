@@ -49,15 +49,24 @@ class CurlingGame:
         bpa = (self.stringRepresentation(board), player, action)
 
         cache_layer = self.getNextStateCache[stone_count]
-        if bpa not in cache_layer:
-            assert self._thrownStones(utils.getData(board)) < 16
-            self.sim.setupAction(player, action)
-            self.sim.run()
+        if bpa in cache_layer:
+            return cache_layer[bpa]
 
-            next_board = self.sim.getBoard()
-            next_player = 0 - player
-            result = next_board, next_player
-            cache_layer[bpa] = result
+        totalThrownStones_before = self._thrownStones(utils.getData(board))
+        assert totalThrownStones_before < 16
+        self.sim.setupAction(player, action)
+        self.sim.run()
+        assert totalThrownStones_before + 1 == self.sim.space.thrownStonesCount()
+
+        next_board = self.sim.getBoard()
+        next_player = -player
+
+        if self.sim.space.thrownStonesCount() < 16:
+            np_check = utils.getNextPlayer(next_board, next_player)
+            if next_player != np_check:
+                raise GameException('Next player check failed.')
+        result = next_board, next_player
+        cache_layer[bpa] = result
 
         return cache_layer[bpa]
 
@@ -74,22 +83,22 @@ class CurlingGame:
             raise utils.GameException('getValidMoves requested after game end.')
 
         player_turn = utils.getNextPlayer(board, player)
-        if player_turn == player:
-            # Do not cause the same state
-            board_no_data = self.sim.getBoard()[0:-1]
-            all_actions = [1] * self.getActionSize()
-            for action in range(self.getActionSize()):
-                newboard, newplayer = self.getNextState(board, player, action)
-                new_board_no_data = newboard[0:-1]
-                if np.array_equal(new_board_no_data, board_no_data):
-                    log.debug('Move has no effect: %s, %s, %s', self.stringRepresentation(board), player, action)
-                    all_actions[action] = 0
+        assert player_turn == player, f'Moves requested for player ({player}) do not match next player ({player_turn})'
 
-            if sum(all_actions) == 0:
-                log.error('Entered a bad state: no valid moves.')
-                raise GameException('No valid moves. This shouldnt happen')
-            return all_actions
-        raise GameException(f'Moves requested for player ({player}) do not match next player ({player_turn})')
+        # Do not cause the same state
+        board_no_data = self.sim.getBoard()[0:-1]
+        all_actions = [1] * self.getActionSize()
+        for action in range(self.getActionSize()):
+            newboard, newplayer = self.getNextState(board, player, action)
+            new_board_no_data = newboard[0:-1]
+            if np.array_equal(new_board_no_data, board_no_data):
+                log.debug('Move has no effect: %s, %s, %s', self.stringRepresentation(board), player, action)
+                all_actions[action] = 0
+
+        if sum(all_actions) == 0:
+            log.error('Entered a bad state: no valid moves.')
+            raise GameException('No valid moves. This shouldnt happen')
+        return all_actions
 
     def getGameEnded(self, board: np.array, player: int):
 
@@ -146,19 +155,7 @@ class CurlingGame:
 
     @staticmethod
     def getCanonicalForm(board, player):
-        data_row = utils.getData(board)
-        log.debug(f'getCanonicalForm({data_row}, {player})')
-        if player == c.P1:
-            log.debug(f'getCanonicalForm(board, {player}) -> {data_row}')
-            return board
-
-        flip = board * -1
-
-        # Data row remains the same
-        flip[-1][0:8] = (board[-1][8:16] * -1)
-        flip[-1][8:16] = (board[-1][0:8] * -1)
-        log.debug(f'getCanonicalForm(board, {player}) -> {utils.getData(flip)}')
-        return flip
+        return utils.getCanonicalForm(board, player)
 
     @staticmethod
     def getSymmetries(board, pi):

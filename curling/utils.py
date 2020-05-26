@@ -146,7 +146,7 @@ def realToBoard(x: float, y: float) -> (int, int):
     bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION
     by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION
     ix, iy = proper_round(bx), proper_round(by)
-    log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
+    # log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
     return ix, iy
 
 
@@ -333,7 +333,8 @@ def getBoardSize() -> (int, int):
     return width_px + data_layer, height_px
 
 
-def getNextPlayer(board, player=c.P1):
+def getNextPlayer(board, player):
+    board = getCanonicalForm(board, player)
     data_row = board[-1]
 
     # 0 = empty ice
@@ -348,14 +349,28 @@ def getNextPlayer(board, player=c.P1):
 
     # data row begins with 22222222 -2-2-2-2-2-2-2-2
 
+    log.debug('Checking data: %s', data_row[0:16])
+    # If each player throws 2 stones - can't tell from board whose turn it is.
     for i in range(8):  # Check 8 stones
         if data_row[i] == c.P1_NOT_THROWN:
-            return 1
+            return 1 * player  # This flips the response IFF the board was also flipped
 
         if data_row[i + 8] == c.P2_NOT_THROWN:
-            return -1
+            return -1 * player
 
     raise NobodysTurn("It is nobody's turn. Player: %s Data row: %s" % (player, data_row[0:16]))
+
+
+def getCanonicalForm(board, player):
+    if player == c.P1:
+        return board
+
+    flip = board * -1
+
+    # Data row remains the same
+    flip[-1][0:8] = (board[-1][8:16] * -1)
+    flip[-1][8:16] = (board[-1][0:8] * -1)
+    return flip
 
 
 def getData(board: np.ndarray):
