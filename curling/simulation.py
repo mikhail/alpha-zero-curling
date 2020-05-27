@@ -141,14 +141,14 @@ class Simulation:
             try:
                 board[x][y]
             except IndexError:
-                log.warning("Rounding error placed a rock outside of bounds. Removing it")
+                log.debug("Rounding error placed a rock outside of bounds. Removing it")
                 if team_id == c.P1:
-                    log.warning('Marking p1 stone out of play')
+                    log.debug('Marking p1 stone out of play')
                     board[-1][p1_stone_id] = c.P1_OUT_OF_PLAY
                     p1_stone_id += 1
 
                 if team_id == c.P2:
-                    log.warning('Marking p2 stone out of play')
+                    log.debug('Marking p2 stone out of play')
                     board[-1][p2_stone_id + 8] = c.P2_OUT_OF_PLAY
                     p2_stone_id += 1
                 continue
