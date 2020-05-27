@@ -11,6 +11,7 @@ import jsonschema
 import numpy as np
 import socketio
 
+import log_handler
 import utils
 from MCTS import MCTS
 from curling import constants as c
@@ -37,13 +38,14 @@ AZ_COLOR = 'blue' if AZ_TEAM == 0 else 'red'
 AZ_NAME = f"🧠 AlphaZero ({AZ_COLOR})"
 
 
+@log_handler.on_error()
 def get_best_action(board, use_mcts: bool, player: AZ_TEAM_OMO):
     if use_mcts:
         now = time.time()
-        args1 = utils.dotdict({'numMCTSSims': 10, 'cpuct': 2.0})
+        args1 = utils.dotdict({'numMCTSSims': 30, 'cpuct': 1.0})
         mcts1 = MCTS(game, n1, args1)
         board = game.getCanonicalForm(board, player)
-        while time.time() - now < 7:  # think for 7 seconds
+        while time.time() - now < 20:  # think for X seconds
             best_action = np.argmax(mcts1.getActionProb(board, temp=0))
             log.info('Considering the shot: ' + str(c_utils.decodeAction(best_action)))
     else:

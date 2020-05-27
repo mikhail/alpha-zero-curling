@@ -86,7 +86,7 @@ class Arena():
             if res > 0:
                 p1_score += res
             else:
-                p2_score += res
+                p2_score -= res
 
         self.player1, self.player2 = self.player2, self.player1
 
@@ -97,6 +97,6 @@ class Arena():
             if res > 0:
                 p2_score += res
             else:
-                p1_score += res
+                p1_score -= res
 
         return p1_score, p2_score
