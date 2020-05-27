@@ -1,3 +1,5 @@
+from typing import Tuple
+
 EMPTY = 0
 
 P1_COLOR = 'red'
@@ -35,7 +37,7 @@ WEIGHT_FT = {
 }
 HANDLES = (1, -1)  # rotation velocity
 BROOMS = range(-6, 7)
-ACTION_LIST = tuple(
+ACTION_LIST: Tuple[Tuple[int, str, int]] = tuple(
     (h, w, b)
     for h in HANDLES
     for w in WEIGHT_FT.keys()
@@ -46,5 +48,5 @@ SHORT_ACTION_LIST = [
     (-1, '3', -6),  # Draw
     (-1, '3', 6),  # Hit wall
     (1, '7', 6),  # button
-    (-1, 'control', -6)  # through
+    (1, 'control', -6)  # through
 ]

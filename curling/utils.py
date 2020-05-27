@@ -1,6 +1,6 @@
 import logging
 import math
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 import pymunk
@@ -160,7 +160,8 @@ def getAction(handle: int, weight: str, broom: int):
     return c.ACTION_LIST.index((int(handle), weight, int(broom)))
 
 
-def decodeAction(action):
+def decodeAction(action: int) -> Tuple[int, str, int]:
+    """Returns Handle, Weight, Broom for a given action number."""
     assert action >= 0
     return c.ACTION_LIST[action]
 

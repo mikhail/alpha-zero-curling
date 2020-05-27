@@ -338,14 +338,14 @@ def test_get_valid_moves():
     assert sum(valid) == 2
 
 
-@mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)
-def test_get_valid_moves_caches():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-
-    with mock.patch.object(curl.sim, 'run', wraps=curl.sim.run) as spy:
-        curl.getValidMoves(board, 1)
-        assert spy.call_count == 4
-
-        curl.getValidMoves(board, 1)
-        assert spy.call_count == 4  # Call count didn't increase!
+# @mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)
+# def test_get_valid_moves_caches():
+#     curl = game.CurlingGame()
+#     board = curl.getInitBoard()
+#
+#     with mock.patch.object(curl.sim, 'run', wraps=curl.sim.run) as spy:
+#         curl.getValidMoves(board, 1)
+#         assert spy.call_count == 4
+#
+#         curl.getValidMoves(board, 1)
+#         assert spy.call_count == 4  # Call count didn't increase!

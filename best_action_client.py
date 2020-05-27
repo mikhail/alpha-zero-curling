@@ -78,7 +78,7 @@ def state(data):
     jsonschema.validate(data, json.load(open('./curling/schema.json')))
     board = game.boardFromSchema(data)
     try:
-        next_player = c_utils.getNextPlayer(board)
+        next_player = c_utils.getNextPlayer(board, c.P1)
     except c_utils.NobodysTurn:
         log.warning("Game over.")
         return
@@ -103,6 +103,6 @@ def disconnect():
     log.info('disconnected from server')
 
 
-sio.connect('http://localhost:3000/?room=/curling.gg/vs_ai')
-# sio.connect('http://curling-socket.herokuapp.com/?room=/vs-ai')
+#sio.connect('http://localhost:3000/?room=/curling.gg/vs_ai')
+sio.connect('http://curling-socket.herokuapp.com/?room=/vs-ai')
 sio.wait()
