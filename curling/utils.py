@@ -227,19 +227,26 @@ def addBoundaries(space: Space):
         pymunk.Segment(space.static_body, (left, backline), (right, backline), 0.1),
         pymunk.Segment(space.static_body, (right, backline), (right, 0), 0.1)
     )
+    w1.name = 'Left wall'
+    w2.name = 'Right wall'
+    w3.name = 'Backline wall'
 
     w1.collision_type = 2
     w2.collision_type = 2
     w3.collision_type = 2
 
     def remove_stone(arbiter, local_space, data):
-        stone = arbiter.shapes[0]
+        stone, wall = arbiter.shapes
+
+        if getattr(stone, 'already_removed', False):
+            return False
 
         if five_rock_rule(stone, local_space):
             local_space.five_rock_rule_violation = True
             log.debug('Stone %s triggered 5-rock rule violation.', stone)
             return False
-        local_space.remove_stone(stone, 'Collision with the wall')
+        setattr(stone, 'already_removed', True)
+        local_space.remove_stone(stone, 'Collision with the wall name: %s' % getattr(wall, 'name'))
 
         return True
 

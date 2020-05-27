@@ -231,3 +231,17 @@ def test_encoded_decoded_touches_barrier():
     curl.sim.run()
     bs = curl.stringRepresentation(curl.sim.getBoard())
     assert bs.startswith('1:[[33, 51]]:2:[]')
+
+
+def test_next_stone_count_unequal():
+    bs ="1:[]:2:[[28, 59]]:d:[3, 3, 3, 3, 2, 2, 2, 2, -3, -3, -3, 0, -2, -2, -2, -2]"
+
+    curl = game.CurlingGame()
+    curl.getNextState(curl.boardFromString(bs), 1, 178)
+
+
+def test_two_wall_collision():
+    bs ="1:[]:2:[[28, 59]]:d:[3, 3, 3, 3, 2, 2, 2, 2, -3, -3, -3, 0, -2, -2, -2, -2]"
+
+    curl = game.CurlingGame()
+    curl.getNextState(curl.boardFromString(bs), 1, 178)
