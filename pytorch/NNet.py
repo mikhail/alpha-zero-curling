@@ -1,19 +1,14 @@
 import os
-import sys
-import time
 
 import numpy as np
+import torch
+import torch.optim as optim
 from tqdm import tqdm
 
 from NeuralNet import NeuralNet
-
-sys.path.append('../../')
-from utils import *
-
-import torch
-import torch.optim as optim
-
-from .OthelloNNet import OthelloNNet as onnet
+# from pytorch.models import Model
+from pytorch.OthelloNNet import OthelloNNet as Model
+from utils import dotdict
 
 tqdm.monitor_interval = 0
 
@@ -24,13 +19,14 @@ args = dotdict({
     'batch_size': 16,
     'cuda': torch.cuda.is_available(),
     'num_channels': 64,
+    'layers': 4,
 })
 
 
 class NNetWrapper(NeuralNet):
     def __init__(self, game):
         super().__init__(game)
-        self.nnet = onnet(game, args)
+        self.nnet = Model(game, args)
         self.board_x, self.board_y = game.getBoardSize()
         self.action_size = game.getActionSize()
 
