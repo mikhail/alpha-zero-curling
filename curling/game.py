@@ -164,7 +164,9 @@ class CurlingGame:
     @staticmethod
     def getSymmetries(board, pi):
         # TODO: this can be flipped over y axis
-        return [(board, pi)]
+        flipped = board.copy()
+        flipped[0:-1] = flipped[0:-1][::-1]  # Flip all except data
+        return [(board, pi), (flipped, pi)]
 
     @staticmethod
     def stringRepresentation(board):

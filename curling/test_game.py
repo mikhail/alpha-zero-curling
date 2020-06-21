@@ -349,3 +349,29 @@ def test_get_valid_moves():
 #
 #         curl.getValidMoves(board, 1)
 #         assert spy.call_count == 4  # Call count didn't increase!
+
+def test_get_symmetries():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
+    board[-1][8:16] = [c.P2_OUT_OF_PLAY] * 8
+    board[-1][7] = c.EMPTY
+    board[2][2] = c.P1
+    board[14][5] = c.P1
+
+    orig, flipped = curl.getSymmetries(board, 'pi')
+    orig = orig[0]
+    flipped = flipped[0]
+
+    with np.testing.assert_raises(AssertionError):
+        np.testing.assert_array_equal(orig, flipped)
+    assert tuple(np.argwhere(flipped == c.P1)[0]) == (18, 5)
+    assert tuple(np.argwhere(flipped == c.P1)[1]) == (30, 2)
+
+    np.testing.assert_array_equal(board, orig)
+
+    # Test the data layer
+    np.testing.assert_array_equal(board[-1], flipped[-1])
+    # Test that data didn't get flipped
+    np.testing.assert_array_equal(board[0], flipped[0])
+

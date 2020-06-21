@@ -4,11 +4,11 @@ from os import path
 import coloredlogs
 import torch
 
+import log_handler
 from Coach import Coach
 from curling.game import CurlingGame
 from pytorch.NNet import NNetWrapper as nn
 from utils import *
-import log_handler
 
 log = logging.getLogger('')
 stream = logging.StreamHandler()
