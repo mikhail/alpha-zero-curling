@@ -43,7 +43,8 @@ class Arena():
         total_moves = 16  # Curling
         progressbar = tqdm(total=total_moves, disable=verbose)  # Don't want a bar when pitting
         it = 0
-        while self.game.getGameEnded(board, curPlayer) == 0:
+        end_score = self.game.getGameEnded(board, curPlayer)
+        while end_score == 0:
             it += 1
             if verbose:
                 assert self.display
@@ -61,12 +62,14 @@ class Arena():
                 print(f"Player({curPlayer}) chose action={action}")
 
             board, curPlayer = self.game.getNextState(board, curPlayer, action)
+            end_score = self.game.getGameEnded(board, curPlayer)
             progressbar.update()
+
         if verbose:
             assert (self.display)
-            print("Game over: Turn ", str(it), "Result ", str(self.game.getGameEnded(board, 1)))
+            print("Game over: Turn ", str(it), "Result ", str(end_score))
             self.display(board)
-        return curPlayer * self.game.getGameEnded(board, curPlayer)
+        return curPlayer * end_score
 
     def playGames(self, num, verbose=False):
         """
