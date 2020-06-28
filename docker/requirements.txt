@@ -3,11 +3,13 @@ coloredlogs==14.0
 cython==0.28.3
 flask==1.0
 gitpython==2.1.11
+jsonschema==3.2.0
 matplotlib==2.1.1
 numpy==1.14.5
 pandas==0.23.1
 pylru==1.2.0
 pymunk==5.6.0
+python-socketio==4.6.0
 scikit-image==0.14.0
 scikit-learn==0.19.1
 scipy==1.1.0
