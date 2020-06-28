@@ -28,7 +28,7 @@ game = CurlingGame()
 log.info('Loading NNet for Curling...')
 n1 = NNet(game)
 log.info('Loading checkpoint...')
-n1.load_checkpoint('./curling/data_image/kirill', 'checkpoint_best.pth.tar')
+n1.load_checkpoint('./curling/data_10_layers_256', 'checkpoint_best.pth.tar')
 log.info('Ready! 🚀 ')
 
 AZ_TEAM = int(os.environ.get('AZ_TEAM', '0'))

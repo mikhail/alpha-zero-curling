@@ -38,7 +38,7 @@ class Simulation:
 
     def __init__(self, board_size: (int, int)):
         space = utils.Space(threaded=True)
-        space.threads = 12
+        space.threads = 2
         space.gravity = 0, 0
         space.damping = 1  # No slow down percentage
 

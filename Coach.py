@@ -1,5 +1,6 @@
-import logging
 from collections import deque
+from datetime import datetime
+import logging
 import random
 import time, os, sys
 
@@ -14,6 +15,9 @@ log = logging.getLogger(__name__)
 
 tqdm.monitor_interval = 0
 
+def get_hour():
+    now = time.time()
+    return datetime.fromtimestamp(now).hour
 
 class Coach():
     """
@@ -81,6 +85,10 @@ class Coach():
         """
 
         for i in range(1, self.args.numIters + 1):
+            #if 8 < get_hour() < 23:
+            #    log.warning('Sleeping to save CPU...')
+            #    while 8 < get_hour() < 23:
+            #        time.sleep(60)
             # bookkeeping
             print('------ITER ' + str(i) + '------')
             # examples of the iteration

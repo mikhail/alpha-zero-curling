@@ -54,10 +54,10 @@ class Model(nn.Module):
             logging.error("Too many layers considering the board size.")
             raise ValueError
 
-        out_features = 512 * 2 ** (self.layers - 2)
+        out_features = 256 * 2 ** (self.layers - 2)
         for i in range(self.layers - 2):
             out_features = int(out_features / 2.0)  # needs to be unchanged same outside of the loop
-            max_features = min(out_features, 1024)
+            max_features = min(out_features, 256)
             logging.warning(f"Creating a feature with out_features: {out_features}")
             linear = nn.Linear(in_features, max_features)
             self.fc.append(linear)

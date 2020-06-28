@@ -6,8 +6,8 @@ import torch.optim as optim
 from tqdm import tqdm
 
 from NeuralNet import NeuralNet
-# from pytorch.models import Model
-from pytorch.OthelloNNet import OthelloNNet as Model
+from pytorch.models import Model
+#from pytorch.OthelloNNet import OthelloNNet as Model
 from utils import dotdict
 
 tqdm.monitor_interval = 0
@@ -15,11 +15,11 @@ tqdm.monitor_interval = 0
 args = dotdict({
     'lr': 0.001,
     'dropout': 0.3,
-    'epochs': 10,
+    'epochs': 20,
     'batch_size': 16,
     'cuda': torch.cuda.is_available(),
     'num_channels': 64,
-    'layers': 4,
+    'layers': 10,
 })
 
 
