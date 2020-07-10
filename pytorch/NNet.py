@@ -6,8 +6,8 @@ import torch.optim as optim
 from tqdm import tqdm
 
 from NeuralNet import NeuralNet
-from pytorch.models import Model
-#from pytorch.OthelloNNet import OthelloNNet as Model
+from pytorch.cnn_models import Model
+# from pytorch.OthelloNNet import OthelloNNet as Model
 from utils import dotdict
 
 tqdm.monitor_interval = 0
