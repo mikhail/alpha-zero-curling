@@ -51,8 +51,6 @@ def test_five_rock_rule_not_all_inplay():
     takeout.is_guard = False
     space = utils.Space()
     space.thrownStonesCount = lambda: 2
-    space.p1_removed_stones = 2
-    space.p2_removed_stones = 2
     space.shooter_color = c.P2_COLOR
     assert utils.five_rock_rule(takeout, space) is False
 

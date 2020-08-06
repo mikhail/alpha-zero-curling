@@ -19,7 +19,7 @@ def test_board_is_2d():
     assert height == 4
 
 
-def test_CanonicalBoard_changed():
+def test_CanonicalBoard_unchanged():
     curl = game.CurlingGame()
     original = curl.getInitBoard()
     original[1][1] = 1
@@ -27,6 +27,17 @@ def test_CanonicalBoard_changed():
     canonical = curl.getCanonicalForm(original, 1)
 
     np.testing.assert_array_equal(canonical, original)
+
+
+def test_CanonicalBoard_unchanged_symmetric():
+    curl = game.CurlingGame()
+    original = curl.getInitBoard()
+    original[1][1] = 1
+
+    canonical_once = curl.getCanonicalForm(original, -1)
+    canonical_twice = curl.getCanonicalForm(canonical_once, -1)
+
+    np.testing.assert_array_equal(canonical_twice, original)
 
 
 def test_gameEnded_GameNotStarted():

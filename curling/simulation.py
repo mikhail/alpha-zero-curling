@@ -93,15 +93,6 @@ class Simulation:
     def setupBoard(self, new_board):
         log.debug(f'setupBoard({board_utils.getBoardRepr(new_board)})')
         self.resetBoard()
-        team1 = board_utils.get_xy_team1(new_board)
-        team2 = board_utils.get_xy_team2(new_board)
-
-        # FIXME: Cannot auto calculate stone id here!
-        # for x, y in team1:
-        #     self.addStone(c.P1_COLOR, x, y)
-        #
-        # for x, y in team2:
-        #     self.addStone(c.P2_COLOR, x, y)
 
         p1_stones = board_utils.stones_for_team(new_board, c.P1)
         for i, (x, y, thrown, in_play) in enumerate(p1_stones):
@@ -114,16 +105,12 @@ class Simulation:
                 self.addStone(c.P2_COLOR, x, y, stone_id=i)
 
         # TODO: Convert all p1/p2_removed_stones to single array. maybe
-        self.space.p1_removed_stones = board_utils.removed_stones_team1(new_board)
-        self.space.p2_removed_stones = board_utils.removed_stones_team2(new_board)
         self.space.thrown_stones = new_board[c.BOARD_THROWN]
         self.space.inplay_stones = new_board[c.BOARD_IN_PLAY]
 
     def resetBoard(self):
         for stone in self.getStones():
             self.space.remove(stone.body, stone)
-        self.space.p1_removed_stones = 0
-        self.space.p2_removed_stones = 0
         self.space.thrown_stones = [c.NOT_THROWN] * 16
         self.space.inplay_stones = [c.IN_PLAY] * 16
 
@@ -185,10 +172,8 @@ class Simulation:
         # player = self.getNextPlayer()  # TODO
         if team == c.P1:
             data_position = getNextStoneId(board)
-            self.space.p1_removed_stones += 1
         else:
             data_position = getNextStoneId(board) + 8
-            self.space.p2_removed_stones += 1
 
         self.space.thrown_stones[data_position] = c.THROWN
         self.space.inplay_stones[data_position] = c.OUT_OF_PLAY

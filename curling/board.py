@@ -43,14 +43,6 @@ def get_xy_team2(board: np.array) -> Generator[Tuple[float, float], None, None]:
             yield board[c.BOARD_X][i], board[c.BOARD_Y][i]
 
 
-def removed_stones_team1(board: np.array) -> int:
-    return 8 - sum(board[c.BOARD_IN_PLAY][0:8])
-
-
-def removed_stones_team2(board: np.array) -> int:
-    return 8 - sum(board[c.BOARD_IN_PLAY][8:16])
-
-
 def get_data_rows(board: np.array) -> np.array:
     return board[c.BOARD_Y + 1:]  # everything except x and y rows
 

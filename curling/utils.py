@@ -60,8 +60,6 @@ class Space(pymunk.Space):
 
         self.five_rock_rule_violation = False
         self.removed_stones = []
-        self.p1_removed_stones = 0
-        self.p2_removed_stones = 0
         self.thrown_stones = []
         self.inplay_stones = []
 
@@ -90,10 +88,8 @@ class Space(pymunk.Space):
         log.debug(f'- {stone} {reason}')
         team = stone.getTeamId()
         if team == c.P1:
-            self.p1_removed_stones += 1
             self.inplay_stones[stone.id] = c.OUT_OF_PLAY
         else:
-            self.p2_removed_stones += 1
             self.inplay_stones[stone.id + 8] = c.OUT_OF_PLAY
 
         self.remove(stone, stone.body)
