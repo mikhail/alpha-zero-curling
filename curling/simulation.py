@@ -91,7 +91,7 @@ class Simulation:
         return board
 
     def setupBoard(self, new_board):
-        log.debug(f'setupBoard({utils.getBoardRepr(new_board)})')
+        log.debug(f'setupBoard({board_utils.getBoardRepr(new_board)})')
         self.resetBoard()
         team1 = board_utils.get_xy_team1(new_board)
         team2 = board_utils.get_xy_team2(new_board)

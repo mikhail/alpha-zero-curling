@@ -1,4 +1,3 @@
-import logging
 from unittest import mock
 
 import numpy as np
@@ -177,7 +176,7 @@ def test_gameEnded_NotEndOfGame():
     board = curl.getInitBoard()
 
     board_utils.scenario_all_out_of_play(board)
-    board_utils.set_stone(board, c.P2, 7, 0,0, c.NOT_THROWN, c.IN_PLAY)
+    board_utils.set_stone(board, c.P2, 7, 0, 0, c.NOT_THROWN, c.IN_PLAY)
 
     ended = curl.getGameEnded(board, 1)
 
@@ -192,11 +191,11 @@ def test_gameEnded_edgeCase():
     board = curl.getInitBoard()
 
     board_utils.scenario_all_out_of_play(board)
-    board_utils.set_stone(board, c.P2, 7, 0,0, c.NOT_THROWN, c.IN_PLAY)
+    board_utils.set_stone(board, c.P2, 7, 0, 0, c.NOT_THROWN, c.IN_PLAY)
 
     assert curl.getGameEnded(board, 1) == 0
 
-    board_utils.set_stone(board, c.P2, 7, 0,0, c.THROWN, c.OUT_OF_PLAY)
+    board_utils.set_stone(board, c.P2, 7, 0, 0, c.THROWN, c.OUT_OF_PLAY)
 
     assert curl.getGameEnded(board, 1) != 0
 
@@ -216,6 +215,18 @@ def test_get_valid_moves():
     assert sum(valid) < len(c.ACTION_LIST)
     assert sum(valid) == 2
 
+
+def test_string_repr_is_symmetric():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+    curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+    board_setup = curl.sim.getBoard()
+
+    curl.boardFromString(curl.stringRepresentation(board))
+
+    board_check = curl.sim.getBoard()
+
+    np.testing.assert_array_equal(board_setup, board_check)
 
 # NOTE: Commented out because it's really slow.
 # @mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)

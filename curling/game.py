@@ -1,3 +1,4 @@
+import json
 import logging
 
 import numpy as np
@@ -54,7 +55,11 @@ class CurlingGame:
         return next_board, next_player
 
     def getValidMoves(self, board, player):
+        log.debug(f'Board for player({player}):')
+        log.debug(board_utils.getBoardRepr(board))
         board, player = self.getCanonicalForm(board, player), 1
+        log.debug(f'Canonicalized for player({player}):')
+        log.debug(board_utils.getBoardRepr(board))
 
         self.sim.setupBoard(board)
 
@@ -138,11 +143,11 @@ class CurlingGame:
 
     @staticmethod
     def stringRepresentation(board: np.array):
-        return board.tostring()
+        return json.dumps(board.tolist())
 
     @classmethod
     def boardFromString(cls, string: str):
-        return np.fromstring(string)
+        return np.array(json.loads(string))
 
     @classmethod
     def boardFromSchema(cls, data: dict):

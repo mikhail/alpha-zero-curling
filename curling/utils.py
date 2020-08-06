@@ -311,15 +311,6 @@ def getCurlingForce(body) -> pymunk.Vec2d:
     return curlVector
 
 
-def getBoardRepr(board):
-    ret = "\n"
-    ret += str(list(map(int, board[0]))) + "\n"
-    ret += str(list(map(int, board[1]))) + "\n"
-    ret += str(list(map(int, board[2]))) + "\n"
-    ret += str(list(map(int, board[3])))
-    return ret
-
-
 def euclid(v1, v2):
     return math.sqrt(((v1.x - v2.x) ** 2) + ((v1.y - v2.y) ** 2))
 
@@ -341,30 +332,18 @@ def five_rock_rule(stone, space: Space):
 
 def getNextPlayer(board, player):
     board = getCanonicalForm(board, player)
-    data_row = board[-1]
 
-    # 0 = empty ice
+    thrown_data = board[c.BOARD_THROWN]
+    log.debug('Checking data: %s', thrown_data)
 
-    # 1 = player 1 stone in play
-    # 2 = player 1 stone not thrown yet
-    # 3 = player 1 stone out of play
-
-    # -1 = player 2 stone in play
-    # -2 = player 2 stone not thrown yet
-    # -3 = player 2 stone out of play
-
-    # data row begins with 22222222 -2-2-2-2-2-2-2-2
-
-    log.debug('Checking data: %s', data_row[0:16])
-    # If each player throws 2 stones - can't tell from board whose turn it is.
     for i in range(8):  # Check 8 stones
-        if board[c.BOARD_THROWN][i] == c.NOT_THROWN:
-            return 1 * player  # This flips the response IFF the board was also flipped
+        if thrown_data[i] == c.NOT_THROWN:
+            return 1 * player
 
-        if board[c.BOARD_THROWN][i + 8] == c.NOT_THROWN:
+        if thrown_data[i + 8] == c.NOT_THROWN:
             return -1 * player
 
-    raise NobodysTurn("It is nobody's turn. Player: %s Data row: %s" % (player, data_row[0:16]))
+    raise NobodysTurn("It is nobody's turn. Player: %s Data row: %s" % (player, thrown_data))
 
 
 def getCanonicalForm(board: np.array, player):

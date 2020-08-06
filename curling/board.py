@@ -72,6 +72,15 @@ def getBoardSize():
     return 4, 16
 
 
+def getBoardRepr(board):
+    ret = "\n"
+    ret += str(list(map(int, board[0]))) + "\n"
+    ret += str(list(map(int, board[1]))) + "\n"
+    ret += str(list(map(int, board[2]))) + "\n"
+    ret += str(list(map(int, board[3])))
+    return ret
+
+
 def thrownStones(board):
     logging.warning('Try using sim.space.thrownStonesCount() instead.')
     return sum(board[c.BOARD_THROWN])
