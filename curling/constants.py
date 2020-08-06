@@ -2,6 +2,12 @@ from typing import Tuple
 
 EMPTY = 0
 
+NOT_THROWN = 0
+THROWN = 1
+
+OUT_OF_PLAY = 0
+IN_PLAY = 1
+
 P1_COLOR = 'red'
 P1 = 1
 P1_NOT_THROWN = 2
@@ -11,6 +17,12 @@ P2_COLOR = 'blue'
 P2 = -1
 P2_NOT_THROWN = -2
 P2_OUT_OF_PLAY = -3
+
+# What info is stored in board data
+BOARD_X = 0
+BOARD_Y = 1
+BOARD_THROWN = 2
+BOARD_IN_PLAY = 3
 
 STONE_RADIUS_IN = 5.73
 STONE_MASS = 2  # units don't matter... 1 'stone" weight.

@@ -4,6 +4,7 @@ from unittest import mock
 import numpy as np
 
 import log_handler
+from curling import board as board_utils
 from curling import constants as c
 from curling import game
 from curling import utils
@@ -11,16 +12,86 @@ from curling import utils
 log = logging.getLogger(__name__)
 
 
-def test_guard():
+def test_getNextPlayer_0():
+    curl = game.CurlingGame()
+    player = utils.getNextPlayer(curl.getInitBoard(), c.P1)
+    assert player == 1
+
+
+def test_getNextPlayer_1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
     next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
 
-    p1_stones = len(np.argwhere(next_board == c.P1))
+    total_stones = len(curl.sim.getStones())
 
-    assert p1_stones == 1
+    assert total_stones == 1
     assert next_player == c.P2
+
+
+def test_getNextPlayer_2():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+
+    total_stones = len(curl.sim.getStones())
+
+    assert total_stones == 2
+    assert next_player == c.P1
+
+
+def test_getNextPlayer_3():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+
+    total_stones = len(curl.sim.getStones())
+
+    assert total_stones == 3
+    assert next_player == c.P2
+
+
+
+def test_getNextPlayer_4():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+
+    total_stones = len(curl.sim.getStones())
+
+    assert total_stones == 4
+    assert next_player == c.P1
+
+
+def test_getNextPlayer_4_canonical():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+    board[-1][0] = c.EMPTY
+    board[-1][8] = c.EMPTY
+
+    board[-1][1] = c.EMPTY
+    board[-1][9] = c.EMPTY
+
+    canon = curl.getCanonicalForm(board, c.P2)
+    player = utils.getNextPlayer(canon, c.P2)
+    assert player == -1
+
+
+def test_guard():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
 
     shooter = curl.sim.getStones()[0]
     shooter.updateGuardValue()  # We normally only do this during addStone()
@@ -33,7 +104,7 @@ def test_draw():
 
     next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '7', 6)))
 
-    p1_stones = len(np.argwhere(next_board == c.P1))
+    p1_stones = len(list(board_utils.get_xy_team1(next_board)))
 
     assert p1_stones == 1
     assert next_player == c.P2
@@ -49,7 +120,7 @@ def test_control():
 
     next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, 'control', 6)))
 
-    p1_stones = len(np.argwhere(next_board == c.P1))
+    p1_stones = len(list(board_utils.get_xy_team1(next_board)))
 
     assert p1_stones == 0
     assert next_player == c.P2
@@ -71,12 +142,11 @@ def test_5_rock_rule():
         next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, 'control', 0)))
         assert spy.call_count == 1
     assert next_player == c.P1
-    assert next_board[-1][8] == c.P2_OUT_OF_PLAY
 
-    p1_stones = len(np.argwhere(next_board == c.P1))
+    p1_stones = len(list(board_utils.get_xy_team1(next_board)))
     assert p1_stones == 1, "Player 1 should keep their stone."
 
-    p2_stones = len(np.argwhere(next_board == c.P2))
+    p2_stones = len(list(board_utils.get_xy_team2(next_board)))
     assert p2_stones == 0, "Player 2 should have had their stone removed."
 
     first_stone = curl.sim.getStones()[0]
@@ -97,38 +167,14 @@ def test_5_rock_rule_reverse():
     next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, 'control', -4)))
     assert next_player == c.P1
 
-    p1_stones = len(np.argwhere(next_board == c.P1))
+    p1_stones = len(list(board_utils.get_xy_team1(next_board)))
     assert p1_stones == 1, "Player 1 should keep their stone."
 
-    p2_stones = len(np.argwhere(next_board == c.P2))
+    p2_stones = len(list(board_utils.get_xy_team2(next_board)))
     assert p2_stones == 0, "Player 2 should have had their stone removed."
 
     first_stone = curl.sim.getStones()[0]
     assert first_stone.is_guard
-
-
-@log_handler.on_error()
-def test_occupying_16th_position():
-    """
-    This test has a case where a stone ends up being very near a wall but not eliminated.
-    This revelaed that realToBoard() conversion needed to be shifted down by "1" before returning.
-    """
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-    board[14, 20] = 1
-    board[10, 20] = 2
-    board[-1][0:16] = [3, 3, 3, 3, 3, 0, 2, 2, -3, -3, -3, -3, -3, 0, -2, -2]
-
-    curl.getNextState(board, 1, 162)
-
-
-@log_handler.on_error()
-def test_stone_lands_on_data_row():
-    curl = game.CurlingGame()
-    boardString = "1:[]:2:[[15, 16]]:d:[3, 3, 3, 3, 3, 3, 3, 2, -3, -3, -3, -3, -3, -3, -3, 0]"
-    board = curl.boardFromString(boardString)
-
-    curl.getNextState(board, 1, 54)
 
 
 def test_it_curls_left():
@@ -155,93 +201,10 @@ def test_it_curls_right():
     assert stone.body.position.x > right_house  # positive handle, positive broom, should cross over the center
 
 
-@log_handler.on_error()
-def test_ninth_rock_requested():
-    curl = game.CurlingGame()
-
-    bs = "1:[[8, 30]]:2:[[3, 33], [5, 31], [11, 34]]:d:[3, 3, 3, 3, 3, 3, 0, 2, -3, -3, -3, -3, -3, 0, 0, 0]"
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 3)
-
-    bs = "1:[[8, 30]]:2:[[4, 33], [6, 37], [7, 39], [11, 34]]:d:[3, 3, 3, 3, 3, 0, 2, 2, -3, -3, -3, 0, 0, 0, 0, -2]"
-
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 3)
-
-
-@log_handler.on_error()
-def test_index_out_of_bounds():
-    curl = game.CurlingGame()
-
-    bs = "1:[[23, 51], [28, 37]]:2:[[23, 61]]:d:[3, 3, 3, 3, 3, 0, 0, 2, -3, -3, -3, -3, -3, -3, 0, -2]"
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 180)  # 180=(-1, 'control', 5)
-
-
-@log_handler.on_error()
-def test_index_out_of_bounds_3():
-    # 1:[[24, 45], [30, 52]]:2:[[14, 36], [17, 45], [19, 49] , [28, 40]]:d:[3, 3, 3, 3, 0, 0, 2, 2, -3, -3, 0, 0, 0, 0, -2, -2], 1, 174=(-1, 'control', -1)
-
-    bs = "1:[[24, 45], [30, 52]]:2:[[14, 36], [17, 45], [19, 49], [28, 40]]:d:[3, 3, 3, 3, 0, 0, 2, 2, -3, -3, 0, 0, 0, 0, -2, -2]"
-    curl = game.CurlingGame()
-    board = curl.boardFromString(bs)
-    curl.getNextState(board, 1, 174)
-
-
-@log_handler.on_error()
-@mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)
-def test_wrong_player_requested():
-    curl = game.CurlingGame()
-
-    bs = "1:[]:2:[]:d:[0, 2, 2, 2, 2, 2, 2, 2, -3, 0, -2, -2, -2, -2, -2, -2]"
-    board = curl.boardFromString(bs)
-    ns, np = curl.getNextState(board, 1, 1)
-
-    curl.getValidMoves(ns, np)
-
-
-@log_handler.on_error()
-def test_encoded_stone_on_edge():
-    curl = game.CurlingGame()
-    x = (utils.ICE_WIDTH / 2) - (utils.STONE_RADIUS) - 1
-    y = utils.TEE_LINE  # doesn't matter, just not something that eliminates
-    curl.sim.addStone('red', x, y)
-    curl.sim.run()
-    bs = curl.stringRepresentation(curl.sim.getBoard())
-    assert bs.startswith('1:[[33, 51]]:2:[]')
-
-
-@log_handler.on_error()
-def test_encoded_decoded_touches_barrier():
-    """
-    There was a bug where:
-        stone ends really close to the barrier
-        encodes into a value like 33
-        decodes back touching the barrier
-    """
-    curl = game.CurlingGame()
-    x = (utils.ICE_WIDTH / 2) - utils.STONE_RADIUS - 1
-    y = utils.TEE_LINE  # doesn't matter, just not something that eliminates
-    curl.sim.addStone('red', x, y)
-    curl.sim.run()
-    bs = curl.stringRepresentation(curl.sim.getBoard())
-    assert bs.startswith('1:[[33, 51]]:2:[]')
-
-    curl.sim.setupBoard(curl.boardFromString(bs))
-    curl.sim.run()
-    bs = curl.stringRepresentation(curl.sim.getBoard())
-    assert bs.startswith('1:[[33, 51]]:2:[]')
-
-
-def test_next_stone_count_unequal():
-    bs ="1:[]:2:[[28, 59]]:d:[3, 3, 3, 3, 2, 2, 2, 2, -3, -3, -3, 0, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    curl.getNextState(curl.boardFromString(bs), 1, 178)
-
-
 def test_two_wall_collision():
-    bs ="1:[]:2:[[28, 59]]:d:[3, 3, 3, 3, 2, 2, 2, 2, -3, -3, -3, 0, -2, -2, -2, -2]"
-
-    curl = game.CurlingGame()
-    curl.getNextState(curl.boardFromString(bs), 1, 178)
+    # TODO this would actually be a good test to have.
+    pass
+    # bs = "1:[]:2:[[28, 59]]:d:[3, 3, 3, 3, 2, 2, 2, 2, -3, -3, -3, 0, -2, -2, -2, -2]"
+    #
+    # curl = game.CurlingGame()
+    # curl.getNextState(curl.boardFromString(bs), 1, 178)

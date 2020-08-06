@@ -59,15 +59,19 @@ class Space(pymunk.Space):
         log.debug('Creating a new space 🎉 ')
 
         self.five_rock_rule_violation = False
+        self.removed_stones = []
         self.p1_removed_stones = 0
         self.p2_removed_stones = 0
+        self.thrown_stones = []
+        self.inplay_stones = []
+
         self.shooter_color = 'Unknown'
 
     def get_stones(self) -> List['Stone']:
         return [s for s in self.shapes if type(s) == Stone]
 
     def thrownStonesCount(self):
-        return len(self.get_stones()) + self.p1_removed_stones + self.p2_removed_stones
+        return sum(self.thrown_stones)
 
     def get_shooter(self):
         shooters = [s for s in self.get_stones() if s.is_shooter]
@@ -87,8 +91,10 @@ class Space(pymunk.Space):
         team = stone.getTeamId()
         if team == c.P1:
             self.p1_removed_stones += 1
+            self.inplay_stones[stone.id] = c.OUT_OF_PLAY
         else:
             self.p2_removed_stones += 1
+            self.inplay_stones[stone.id + 8] = c.OUT_OF_PLAY
 
         self.remove(stone, stone.body)
 
@@ -141,19 +147,24 @@ class Stone(pymunk.Circle):
     def getTeamId(self):
         return c.P1 if self.color == c.P1_COLOR else c.P2
 
+    def getXY(self):
+        return self.body.position.x, self.body.position.y
+
 
 def realToBoard(x: float, y: float) -> (int, int):
-    bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION
-    by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION
-    ix, iy = proper_round(bx), proper_round(by)
-    # log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
-    return ix, iy
+    return x, y
+    # bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION
+    # by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION
+    # ix, iy = proper_round(bx), proper_round(by)
+    # # log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
+    # return ix, iy
 
 
 def boardToReal(x: float, y: float):
-    real_x = ((float(x)) / c.BOARD_RESOLUTION) * X_SCALE + STONE_RADIUS - (ICE_WIDTH / 2.0)
-    real_y = ((float(y)) / c.BOARD_RESOLUTION) * Y_SCALE + STONE_RADIUS + HOG_LINE
-    return real_x, real_y
+    return x, y
+    # real_x = ((float(x)) / c.BOARD_RESOLUTION) * X_SCALE + STONE_RADIUS - (ICE_WIDTH / 2.0)
+    # real_y = ((float(y)) / c.BOARD_RESOLUTION) * Y_SCALE + STONE_RADIUS + HOG_LINE
+    # return real_x, real_y
 
 
 def getAction(handle: int, weight: str, broom: int):
@@ -301,9 +312,12 @@ def getCurlingForce(body) -> pymunk.Vec2d:
 
 
 def getBoardRepr(board):
-    team1 = np.argwhere(board == c.P1)
-    team2 = np.argwhere(board == c.P2)
-    return '1:' + str(team1.tolist()) + ':2:' + str(team2.tolist()) + ':d:' + str(board[-1][0:16].astype(int).tolist())
+    ret = "\n"
+    ret += str(list(map(int, board[0]))) + "\n"
+    ret += str(list(map(int, board[1]))) + "\n"
+    ret += str(list(map(int, board[2]))) + "\n"
+    ret += str(list(map(int, board[3])))
+    return ret
 
 
 def euclid(v1, v2):
@@ -325,22 +339,6 @@ def five_rock_rule(stone, space: Space):
     return True
 
 
-def getInitBoard():
-    board = np.zeros(getBoardSize(), int)
-    board[-1][0:8] = [c.P1_NOT_THROWN] * 8
-    board[-1][8:16] = [c.P2_NOT_THROWN] * 8
-
-    return board
-
-
-def getBoardSize() -> (int, int):
-    width_px = int(ICE_WIDTH * c.BOARD_RESOLUTION)
-    height_px = int(BOX_LENGTH_WITH_BUFFER * c.BOARD_RESOLUTION)
-
-    data_layer = 1  # 1 entire row is dedicated to keep track of data (stones thrown/out of play)
-    return width_px + data_layer, height_px
-
-
 def getNextPlayer(board, player):
     board = getCanonicalForm(board, player)
     data_row = board[-1]
@@ -360,29 +358,32 @@ def getNextPlayer(board, player):
     log.debug('Checking data: %s', data_row[0:16])
     # If each player throws 2 stones - can't tell from board whose turn it is.
     for i in range(8):  # Check 8 stones
-        if data_row[i] == c.P1_NOT_THROWN:
+        if board[c.BOARD_THROWN][i] == c.NOT_THROWN:
             return 1 * player  # This flips the response IFF the board was also flipped
 
-        if data_row[i + 8] == c.P2_NOT_THROWN:
+        if board[c.BOARD_THROWN][i + 8] == c.NOT_THROWN:
             return -1 * player
 
     raise NobodysTurn("It is nobody's turn. Player: %s Data row: %s" % (player, data_row[0:16]))
 
 
-def getCanonicalForm(board, player):
+def getCanonicalForm(board: np.array, player):
     if player == c.P1:
+        log.debug('Not flipping the board')
         return board
 
-    flip = board * -1
+    log.debug("Flipping the board")
+    log.debug('before:')
+    log.debug(board)
+    flip = np.concatenate((board[:, 8:16], board[:, 0:8]), axis=1)
+    log.debug('after:')
+    log.debug(flip)
 
-    # Data row remains the same
-    flip[-1][0:8] = (board[-1][8:16] * -1)
-    flip[-1][8:16] = (board[-1][0:8] * -1)
     return flip
 
 
 def getData(board: np.ndarray):
-    return board[-1][0:16]
+    raise DeprecationWarning('Everything is data now.')
 
 
 def getStoneLocations(board: np.ndarray) -> (List[int], List[int]):

@@ -1,83 +1,23 @@
+import logging
 from unittest import mock
 
 import numpy as np
 
-import curling.utils
 import log_handler
-from . import constants as c
-from . import game
-from . import utils
+from curling import board as board_utils
+from curling import constants as c
+from curling import game
+from curling import utils
+
+inch = utils.dist(inches=1)
 
 
 def test_board_is_2d():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
-    width, height = board.shape
-    assert width >= 16  # Minimum for data row
-    assert height > width  # just sanity check
-
-
-def test_getNextPlayer_0():
-    curl = game.CurlingGame()
-    player = curling.utils.getNextPlayer(curl.getInitBoard(), c.P1)
-    assert player == 1
-
-
-def test_getNextPlayer_1():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-    board[-1][0] = c.EMPTY
-    player = curling.utils.getNextPlayer(board, c.P1)
-    assert player == -1
-
-
-def test_getNextPlayer_2():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-    board[-1][0] = c.EMPTY
-    board[-1][8] = c.EMPTY
-
-    player = curling.utils.getNextPlayer(board, c.P1)
-    assert player == 1
-
-
-def test_getNextPlayer_3():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-    board[-1][0] = c.EMPTY
-    board[-1][8] = c.EMPTY
-
-    board[-1][1] = c.EMPTY
-
-    player = curling.utils.getNextPlayer(board, c.P1)
-    assert player == -1
-
-
-def test_getNextPlayer_4():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-    board[-1][0] = c.EMPTY
-    board[-1][8] = c.EMPTY
-
-    board[-1][1] = c.EMPTY
-    board[-1][9] = c.EMPTY
-
-    player = curling.utils.getNextPlayer(board, c.P1)
-    assert player == 1
-
-
-def test_getNextPlayer_4_canonical():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-    board[-1][0] = c.EMPTY
-    board[-1][8] = c.EMPTY
-
-    board[-1][1] = c.EMPTY
-    board[-1][9] = c.EMPTY
-
-    canon = curl.getCanonicalForm(board, c.P2)
-    player = curling.utils.getNextPlayer(canon, c.P2)
-    assert player == -1
+    height, width = board.shape
+    assert width == 16
+    assert height == 4
 
 
 def test_CanonicalBoard_changed():
@@ -103,8 +43,7 @@ def test_gameEnded_NoStonesInPlay():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
-    board[-1][8:16] = [c.P2_OUT_OF_PLAY] * 8
+    board_utils.scenario_all_out_of_play(board)
     ended = curl.getGameEnded(board, 1)
 
     assert ended == 0.00001  # Draw
@@ -115,14 +54,7 @@ def test_gameEnded_HammerWinsBy1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][15] = c.EMPTY
-
-    # Team 2 is winning by 1
-    curl.sim.setupBoard(board)
-    curl.sim.addStone(c.P2_COLOR, *game.BUTTON_POSITION)
-    board = curl.sim.getBoard()
+    board_utils.configure_hammer_1_scenario(board)
 
     ended = curl.getGameEnded(board, c.P2)
 
@@ -134,16 +66,7 @@ def test_gameEnded_HammerWinsBy2():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][14:15] = c.EMPTY
-
-    x, y = game.BUTTON_POSITION
-    # Team 2 is winning by 1
-    curl.sim.setupBoard(board)
-    curl.sim.addStone(c.P2_COLOR, x - 5, y - 5)
-    curl.sim.addStone(c.P2_COLOR, x + 5, y + 5)
-    board = curl.sim.getBoard()
+    board_utils.configure_hammer_2_scenario(board)
 
     ended = curl.getGameEnded(board, c.P2)
 
@@ -154,14 +77,12 @@ def test_gameEnded_SlightlyOffCenter_y_1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][15] = c.EMPTY
+    board_utils.scenario_all_out_of_play(board)
 
-    # Team 2 is winning by 1
-    curl.sim.setupBoard(board)
     x, y = game.BUTTON_POSITION
-    curl.sim.addStone(c.P2_COLOR, x, y - utils.dist(inches=1))
+    # Team 2 is winning by 1
+    board_utils.set_stone(board, c.P2, 7, x, y - 1 * inch)
+    curl.sim.setupBoard(board)
 
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
@@ -172,15 +93,12 @@ def test_gameEnded_SlightlyOffCenter_y_1():
 def test_gameEnded_SlightlyOffCenter_y_2():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
+    board_utils.scenario_all_out_of_play(board)
 
-    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][15] = c.EMPTY
-
-    # Team 2 is winning by 1
-    curl.sim.setupBoard(board)
     x, y = game.BUTTON_POSITION
-    curl.sim.addStone(c.P2_COLOR, x, y + utils.dist(inches=1))
+    # Team 2 is winning by 1
+    board_utils.set_stone(board, c.P2, 7, x, y + 1 * inch)
+    curl.sim.setupBoard(board)
 
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
@@ -191,18 +109,13 @@ def test_gameEnded_SlightlyOffCenter_y_2():
 def test_gameEnded_x_HammerCloser():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
-
-    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
-    board[-1][7] = c.EMPTY
-
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][15] = c.EMPTY
-
-    curl.sim.setupBoard(board)
+    board_utils.scenario_all_out_of_play(board)
 
     x, y = game.BUTTON_POSITION
-    curl.sim.addStone(c.P1_COLOR, x + utils.dist(inches=10), y)
-    curl.sim.addStone(c.P2_COLOR, x - utils.dist(inches=1), y)
+
+    board_utils.set_stone(board, c.P1, 7, x, y + 10 * inch)
+    board_utils.set_stone(board, c.P2, 7, x, y - 1 * inch)
+    curl.sim.setupBoard(board)
 
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, c.P2)
@@ -213,18 +126,13 @@ def test_gameEnded_x_HammerCloser():
 def test_gameEnded_y_HammerCloser():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
-
-    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
-    board[-1][7] = c.EMPTY
-
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][15] = c.EMPTY
-
-    curl.sim.setupBoard(board)
+    board_utils.scenario_all_out_of_play(board)
 
     x, y = game.BUTTON_POSITION
-    curl.sim.addStone(c.P1_COLOR, x, y - utils.dist(inches=10))
-    curl.sim.addStone(c.P2_COLOR, x, y + utils.dist(inches=1))
+
+    board_utils.set_stone(board, c.P1, 7, x, y - 10 * inch)
+    board_utils.set_stone(board, c.P2, 7, x, y + 1 * inch)
+    curl.sim.setupBoard(board)
 
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, c.P2)
@@ -236,56 +144,30 @@ def test_gameEnded_SlightlyOffCenter_x_1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][15] = c.EMPTY
+    board_utils.scenario_all_out_of_play(board)
 
-    # Team 2 is winning by 1
-    curl.sim.setupBoard(board)
     x, y = game.BUTTON_POSITION
-    stone = curl.sim.addStone(c.P2_COLOR, x - utils.dist(inches=1), y)
+    # Team 2 is winning by 1
+    board_utils.set_stone(board, c.P2, 7, x - 1 * inch, y)
+    curl.sim.setupBoard(board)
 
     board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, c.P2)
 
-    assert ended == 1, (np.argwhere(board == c.P2), (x, y), stone.body.position)
+    assert ended == 1
 
 
 def test_gameEnded_SlightlyOffCenter_x_2():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-    board[-1][15] = c.EMPTY
+    board_utils.scenario_all_out_of_play(board)
 
-    # Team 2 is winning by 1
-    curl.sim.setupBoard(board)
     x, y = game.BUTTON_POSITION
-    curl.sim.addStone(c.P2_COLOR, x + utils.dist(inches=1), y)
+    # Team 2 is winning by 1
+    board_utils.set_stone(board, c.P2, 7, x + 1 * inch, y)
 
-    board = curl.sim.getBoard()
     ended = curl.getGameEnded(board, 1)
-
-    assert ended == -1
-
-
-@log_handler.on_error()
-def test_gameEnded_OpponentWinsBy1():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-
-    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
-    board[-1][7] = c.EMPTY
-
-    board[-1][8:16] = [c.P2_OUT_OF_PLAY] * 8
-
-    # Team 1 is winning by 1
-    curl.sim.setupBoard(board)
-    curl.sim.addStone(c.P1_COLOR, *game.BUTTON_POSITION)
-    board = curl.sim.getBoard()
-
-    ended = curl.getGameEnded(board, -1)
 
     assert ended == -1
 
@@ -294,11 +176,8 @@ def test_gameEnded_NotEndOfGame():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    board[-1][0:8] = [c.P1_OUT_OF_PLAY] * 8
-    board[-1][8:15] = [c.P2_OUT_OF_PLAY] * 7
-
-    # Hammer hasn't been thrown yet
-    board[-1][15] = c.P2_NOT_THROWN
+    board_utils.scenario_all_out_of_play(board)
+    board_utils.set_stone(board, c.P2, 7, 0,0, c.NOT_THROWN, c.IN_PLAY)
 
     ended = curl.getGameEnded(board, 1)
 
@@ -311,13 +190,13 @@ def test_gameEnded_edgeCase():
 
     curl = game.CurlingGame()
     board = curl.getInitBoard()
-    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
-    board[-1][8:16] = [c.P2_OUT_OF_PLAY] * 8
+
+    board_utils.scenario_all_out_of_play(board)
+    board_utils.set_stone(board, c.P2, 7, 0,0, c.NOT_THROWN, c.IN_PLAY)
 
     assert curl.getGameEnded(board, 1) == 0
 
-    board[-1][7] = c.EMPTY
-    board[2][2] = c.P1
+    board_utils.set_stone(board, c.P2, 7, 0,0, c.THROWN, c.OUT_OF_PLAY)
 
     assert curl.getGameEnded(board, 1) != 0
 
@@ -338,6 +217,7 @@ def test_get_valid_moves():
     assert sum(valid) == 2
 
 
+# NOTE: Commented out because it's really slow.
 # @mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)
 # def test_get_valid_moves_caches():
 #     curl = game.CurlingGame()
@@ -349,29 +229,3 @@ def test_get_valid_moves():
 #
 #         curl.getValidMoves(board, 1)
 #         assert spy.call_count == 4  # Call count didn't increase!
-
-def test_get_symmetries():
-    curl = game.CurlingGame()
-    board = curl.getInitBoard()
-    board[-1][0:7] = [c.P1_OUT_OF_PLAY] * 7
-    board[-1][8:16] = [c.P2_OUT_OF_PLAY] * 8
-    board[-1][7] = c.EMPTY
-    board[2][2] = c.P1
-    board[14][5] = c.P1
-
-    orig, flipped = curl.getSymmetries(board, 'pi')
-    orig = orig[0]
-    flipped = flipped[0]
-
-    with np.testing.assert_raises(AssertionError):
-        np.testing.assert_array_equal(orig, flipped)
-    assert tuple(np.argwhere(flipped == c.P1)[0]) == (18, 5)
-    assert tuple(np.argwhere(flipped == c.P1)[1]) == (30, 2)
-
-    np.testing.assert_array_equal(board, orig)
-
-    # Test the data layer
-    np.testing.assert_array_equal(board[-1], flipped[-1])
-    # Test that data didn't get flipped
-    np.testing.assert_array_equal(board[0], flipped[0])
-

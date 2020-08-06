@@ -3,9 +3,9 @@ from typing import List
 
 import numpy as np
 
+from curling import board as board_utils
 from curling import constants as c
 from curling import utils
-from curling.utils import getData
 
 log = logging.getLogger(__name__)
 
@@ -19,24 +19,40 @@ class ShooterNotFound(SimulationException): pass
 class Timeout(SimulationException): pass
 
 
-def getNextStoneId(board):
-    """Return stone number as it would be in physical game."""
-    # FIXME Does not consider out of play stones? or does it...
-    data_row = utils.getData(board)
+def getNextStoneId(board) -> int:
+    """Return stone number as it would be in physical game (0-7)."""
+
+    throws = board[c.BOARD_THROWN]
+
     for i in range(8):
-        if data_row[i] == c.P1_NOT_THROWN: return i
-        if data_row[i + 8] == c.P2_NOT_THROWN: return i + 8
+        if throws[i] == c.NOT_THROWN: return i
+        if throws[i + 8] == c.NOT_THROWN: return i
 
     log.error('Failure:')
     log.error('Stone locations: %s', utils.getStoneLocations(board))
-    log.error('Data row: %s', data_row)
+    log.error('Throws row: %s', throws)
     log.error('Id requested for 9th rock.')
     raise SimulationException()
 
 
+def getNextStoneOrderId(board) -> int:
+    """Return order id, a value from 0 to 15"""
+
+    throws = board[c.BOARD_THROWN]
+
+    for i in range(8):
+        if throws[i] == c.NOT_THROWN: return i
+        if throws[i + 8] == c.NOT_THROWN: return i
+
+    log.error('Failure:')
+    log.error('Stone locations: %s', utils.getStoneLocations(board))
+    log.error('Throws row: %s', throws)
+    log.error('Id requested for 9th rock.')
+    raise SimulationException()
+
 class Simulation:
 
-    def __init__(self, board_size: (int, int)):
+    def __init__(self):
         space = utils.Space(threaded=True)
         space.threads = 2
         space.gravity = 0, 0
@@ -45,38 +61,91 @@ class Simulation:
         utils.addBoundaries(space)
 
         self.space = space
-        self.boardSize = board_size
+
+        self.space.thrown_stones = [c.NOT_THROWN] * 16
+        self.space.inplay_stones = [c.IN_PLAY] * 16
 
         self.resetBoard()
         self.board_before_action = self.getBoard()
 
+    def getBoard(self) -> np.array:
+
+        board = board_utils.getInitBoard()
+        board[c.BOARD_THROWN] = self.space.thrown_stones
+        board[c.BOARD_IN_PLAY] = self.space.inplay_stones
+
+        log.debug('Populating board from sim.')
+        for stone in self.getStones():
+            log.debug('Setting board stone %s', stone)
+            if stone.color == c.P1_COLOR:
+                stone_id = stone.id
+            else:
+                stone_id = stone.id + 8
+
+            x, y = stone.getXY()
+            board[c.BOARD_X][stone_id] = x
+            board[c.BOARD_Y][stone_id] = y
+            board[c.BOARD_THROWN][stone_id] = c.THROWN
+            board[c.BOARD_IN_PLAY][stone_id] = c.IN_PLAY
+
+        return board
+
     def setupBoard(self, new_board):
         log.debug(f'setupBoard({utils.getBoardRepr(new_board)})')
         self.resetBoard()
-        team1 = np.argwhere(new_board == c.P1)
-        team2 = np.argwhere(new_board == c.P2)
+        team1 = board_utils.get_xy_team1(new_board)
+        team2 = board_utils.get_xy_team2(new_board)
 
-        for x, y in team1:
-            x, y = utils.boardToReal(x, y)
-            self.addStone(c.P1_COLOR, x, y)
+        # FIXME: Cannot auto calculate stone id here!
+        # for x, y in team1:
+        #     self.addStone(c.P1_COLOR, x, y)
+        #
+        # for x, y in team2:
+        #     self.addStone(c.P2_COLOR, x, y)
 
-        for x, y in team2:
-            x, y = utils.boardToReal(x, y)
-            self.addStone(c.P2_COLOR, x, y)
+        p1_stones = board_utils.stones_for_team(new_board, c.P1)
+        for i, (x, y, thrown, in_play) in enumerate(p1_stones):
+            if thrown and in_play:
+                self.addStone(c.P1_COLOR, x, y, stone_id=i)
 
-        self.space.p1_removed_stones = len(np.argwhere(new_board == c.P1_OUT_OF_PLAY))
-        self.space.p2_removed_stones = len(np.argwhere(new_board == c.P2_OUT_OF_PLAY))
+        p2_stones = board_utils.stones_for_team(new_board, c.P2)
+        for i, (x, y, thrown, in_play) in enumerate(p2_stones):
+            if thrown and in_play:
+                self.addStone(c.P2_COLOR, x, y, stone_id=i)
+
+        # TODO: Convert all p1/p2_removed_stones to single array. maybe
+        self.space.p1_removed_stones = board_utils.removed_stones_team1(new_board)
+        self.space.p2_removed_stones = board_utils.removed_stones_team2(new_board)
+        self.space.thrown_stones = new_board[c.BOARD_THROWN]
+        self.space.inplay_stones = new_board[c.BOARD_IN_PLAY]
 
     def resetBoard(self):
         for stone in self.getStones():
             self.space.remove(stone.body, stone)
         self.space.p1_removed_stones = 0
         self.space.p2_removed_stones = 0
+        self.space.thrown_stones = [c.NOT_THROWN] * 16
+        self.space.inplay_stones = [c.IN_PLAY] * 16
+
+    def getStones(self) -> List[utils.Stone]:
+        # keeping it a list (not an iterator) on purpose
+        return [s for s in self.space.shapes if type(s) == utils.Stone]
+
+    def getShooterStone(self):
+        for stone in self.getStones():
+            if stone.is_shooter:
+                return stone
+
+        log.debug('')
+        log.debug(self.getBoard())
+        log.debug('')
+        raise ShooterNotFound()
 
     def addStone(self, color: str, x, y, action=None, stone_id=None):
         stone = utils.newStone(color)
+        board = self.getBoard()
         if stone_id is None:
-            stone_id = getNextStoneId(self.getBoard())
+            stone_id = getNextStoneId(board)
         stone.id = stone_id
 
         stone.body.position = x, y
@@ -96,6 +165,10 @@ class Simulation:
 
         log.debug("+ %s" % stone)
         self.space.add(stone.body, stone)
+
+        data_position = stone_id if color == c.P1_COLOR else stone_id + 8
+        self.space.thrown_stones[data_position] = c.THROWN
+        self.space.inplay_stones[data_position] = c.IN_PLAY
         return stone
 
     def setupAction(self, player, action):
@@ -105,67 +178,20 @@ class Simulation:
         self.addStone(color, 0, 0, action)
         self.space.shooter_color = color
 
-    def getShooterStone(self):
-        for stone in self.getStones():
-            if stone.is_shooter:
-                return stone
-
-        log.debug('')
-        log.debug(self.getBoard())
-        log.debug('')
-        raise ShooterNotFound()
-
     def addShooterAsInvalid(self):
-        team = utils.getNextPlayer(self.getBoard(), c.P1)
+        # Convert removed_stones variable to something else.
+        board = self.getBoard()
+        team = utils.getNextPlayer(board, c.P1)
+        # player = self.getNextPlayer()  # TODO
         if team == c.P1:
+            data_position = getNextStoneId(board)
             self.space.p1_removed_stones += 1
         else:
+            data_position = getNextStoneId(board) + 8
             self.space.p2_removed_stones += 1
 
-    def getStones(self) -> List[utils.Stone]:
-        return [s for s in self.space.shapes if type(s) == utils.Stone]
-
-    def getBoard(self):
-        board = utils.getInitBoard()
-        all_stones = list(self.getStones())
-
-        p1_stone_id = self.space.p1_removed_stones
-        p2_stone_id = self.space.p2_removed_stones
-
-        board[-1][0:self.space.p1_removed_stones] = [c.P1_OUT_OF_PLAY] * self.space.p1_removed_stones
-        board[-1][8:self.space.p2_removed_stones + 8] = [c.P2_OUT_OF_PLAY] * self.space.p2_removed_stones
-
-        for stone in all_stones:
-            x, y = utils.realToBoard(stone.body.position.x, stone.body.position.y)
-            team_id = stone.getTeamId()
-            try:
-                board[x][y]
-            except IndexError:
-                log.debug("Rounding error placed a rock outside of bounds. Removing it")
-                if team_id == c.P1:
-                    log.debug('Marking p1 stone out of play')
-                    board[-1][p1_stone_id] = c.P1_OUT_OF_PLAY
-                    p1_stone_id += 1
-
-                if team_id == c.P2:
-                    log.debug('Marking p2 stone out of play')
-                    board[-1][p2_stone_id + 8] = c.P2_OUT_OF_PLAY
-                    p2_stone_id += 1
-                continue
-
-            if board[x][y] != c.EMPTY:
-                raise SimulationException(f'Space {x, y} occupied by value "{board[x][y]}"')
-            board[x][y] = team_id
-
-            if team_id == c.P1:
-                board[-1][p1_stone_id] = c.EMPTY
-                p1_stone_id += 1
-
-            if team_id == c.P2:
-                board[-1][p2_stone_id + 8] = c.EMPTY
-                p2_stone_id += 1
-
-        return board
+        self.space.thrown_stones[data_position] = c.THROWN
+        self.space.inplay_stones[data_position] = c.OUT_OF_PLAY
 
     def run(self, deltaTime=c.DT):
         more_changes = True
@@ -187,8 +213,4 @@ class Simulation:
                 raise Timeout()
             more_changes = any(s.moving() for s in self.space.get_stones())
 
-        log.debug('run() complete with stones: %s and data: %s', self.getStones(), self.getData())
-
-    def getData(self):
-        board = self.getBoard()
-        return getData(board)
+        log.debug('run() complete with stones: %s and data: %s', self.getStones(), self.getBoard())

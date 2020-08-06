@@ -1,9 +1,8 @@
-import json
 import logging
 
 import numpy as np
-import pylru
 
+from curling import board as board_utils
 from curling import constants as c
 from curling import simulation
 from curling import utils
@@ -20,21 +19,15 @@ class GameException(Exception):
 class CurlingGame:
 
     def __init__(self):
-        self.sim = simulation.Simulation(self.getBoardSize())
-        self.getValidMovesCache = {}
+        self.sim = simulation.Simulation()
 
-        self.getNextStateCache: [pylru.lrucache] = []
-        for i in range(16):
-            self.getNextStateCache.append(pylru.lrucache(2000))
+    @classmethod
+    def getBoardSize(cls):
+        return board_utils.getBoardSize()
 
     @classmethod
     def getInitBoard(cls):
-        return utils.getInitBoard()
-
-    def getBoardSize(self):
-        board_size = utils.getBoardSize()
-        assert board_size[0] >= 16  # need at least this size for data
-        return board_size
+        return board_utils.getInitBoard()
 
     def getActionSize(self):
         return len(c.ACTION_LIST)
@@ -44,15 +37,7 @@ class CurlingGame:
 
         self.sim.setupBoard(board)
 
-        # n.b. This is stones IN PLAY not total thrown stones.
-        stone_count = len(self.sim.getStones())  # can be made faster by reading `board` and skip setupBoard
-        bpa = (self.stringRepresentation(board), player, action)
-
-        cache_layer = self.getNextStateCache[stone_count]
-        if bpa in cache_layer:
-            return cache_layer[bpa]
-
-        totalThrownStones_before = self._thrownStones(utils.getData(board))
+        totalThrownStones_before = self.sim.space.thrownStonesCount()
         assert totalThrownStones_before < 16
         self.sim.setupAction(player, action)
         self.sim.run()
@@ -65,37 +50,25 @@ class CurlingGame:
             np_check = utils.getNextPlayer(next_board, next_player)
             if next_player != np_check:
                 raise GameException('Next player check failed.')
-        result = next_board, next_player
-        cache_layer[bpa] = result
 
-        return cache_layer[bpa]
+        return next_board, next_player
 
     def getValidMoves(self, board, player):
         board, player = self.getCanonicalForm(board, player), 1
 
         self.sim.setupBoard(board)
 
-        data_row = utils.getData(board)
-
-        if self._thrownStones(data_row) >= 16:
-            log.error('getValidMoves() requested at game end. Data: %s' % data_row)
+        if board_utils.thrownStones(board) >= 16:
             log.error('Board: strRepr' + self.stringRepresentation(board))
             raise utils.GameException('getValidMoves requested after game end.')
 
         player_turn = utils.getNextPlayer(board, player)
         assert player_turn == player, f'Moves requested for player ({player}) do not match next player ({player_turn})'
 
-        # Do not cause the same state
-        board_no_data = self.sim.getBoard()[0:-1]
         all_actions = [1] * self.getActionSize()
 
         for action in range(self.getActionSize()):
-            # newboard, newplayer = self.getNextState(board, player, action)
-            # new_board_no_data = newboard[0:-1]
-            # if np.array_equal(new_board_no_data, board_no_data):
-            #     log.debug('Move has no effect: %s, %s, %s', self.stringRepresentation(board), player, action)
-            #     all_actions[action] = 0
-            h,w,b = utils.decodeAction(action)
+            h, w, b = utils.decodeAction(action)
             if h * b < 0:  # clever hack to check that handle and broom not both positive or both negative.
                 all_actions[action] = 0
 
@@ -111,14 +84,18 @@ class CurlingGame:
         player_color = c.P1_COLOR  # Because of the canonical form
 
         self.sim.setupBoard(board)
-        data_row = utils.getData(board)
-        log.debug(f'getGameEnded({self.stringRepresentation(board)})')
-        if self._thrownStones(data_row) < 16:
-            log.debug('getGameEnded -> 0')
+        log.debug(f'getGameEnded({board})')
+        thrown_stones = self.sim.space.thrownStonesCount()
+        # thrown_stones = board_utils.thrownStones(board)
+        if thrown_stones < 16:
+            log.debug('getGameEnded (thrown = %s) -> 0', thrown_stones)
             return 0
 
         house_radius = utils.dist(feet=6, inches=c.STONE_RADIUS_IN)
         stones = self.sim.getStones()
+        log.debug('Stones in play:')
+        for s in stones:
+            log.debug(s)
 
         # TODO: Optimization - don't compute euclid twice
         near_button = sorted(stones, key=lambda s: utils.euclid(s.body.position, BUTTON_POSITION))
@@ -137,6 +114,7 @@ class CurlingGame:
         assert win_count > 0
 
         we_won = win_color == player_color
+        log.debug(f"Who won? we_won = win_color == player_color ({we_won} = {win_color} == {player_color})")
 
         # Ignoring all the fancy logic about hammer or winning by 1 is bad.
         # Too complicated and possibly invalidates the training model
@@ -148,53 +126,29 @@ class CurlingGame:
         log.debug('getGameEnded -> %s', win_value)
         return win_value
 
-    def _thrownStones(self, data_row):
-        stones = self.sim.getStones()
-        p1_oop = len(np.argwhere(data_row == c.P1_OUT_OF_PLAY))
-        p2_oop = len(np.argwhere(data_row == c.P2_OUT_OF_PLAY))
-        thrown_stones = len(stones) + p1_oop + p2_oop
-        log.debug(f'thrownStones() -> {thrown_stones}')
-        assert thrown_stones <= 16
-        return thrown_stones
-
     @staticmethod
     def getCanonicalForm(board, player):
         return utils.getCanonicalForm(board, player)
 
     @staticmethod
     def getSymmetries(board, pi):
-        # TODO: this can be flipped over y axis
-        flipped = board.copy()
-        flipped[0:-1] = flipped[0:-1][::-1]  # Flip all except data
-        return [(board, pi), (flipped, pi)]
+        # TODO: Figure some of this shit out
+        #       Full combination of 8 stones is 4!^2 = 576.
+        return [(board, pi)]
 
     @staticmethod
-    def stringRepresentation(board):
-        return str(utils.getBoardRepr(board))
+    def stringRepresentation(board: np.array):
+        return board.tostring()
 
     @classmethod
     def boardFromString(cls, string: str):
-        # "1: []:2: [[15, 16]]:d: [3, 3, 3, 3, 3, 3, 3, 2, -3, -3, -3, -3, -3, -3, -3, 0]"
-        board = cls.getInitBoard()
-        log.debug(f'Creating a board of size: {utils.getBoardSize()}')
-        data = string.split(':')
-        team1 = json.loads(data[1])
-        team2 = json.loads(data[3])
-        for x, y in team1:
-            log.debug(f'Adding "{c.P1}" @ {x, y}')
-            board[x, y] = c.P1
-        for x, y in team2:
-            log.debug(f'Adding "{c.P2}" @ {x, y}')
-            board[x, y] = c.P2
-        board[-1][0:16] = json.loads(data[5])
-        log.debug('Back to string: %s' % cls.stringRepresentation(board))
-        assert string == cls.stringRepresentation(board)
-        return board
+        return np.fromstring(string)
 
     @classmethod
     def boardFromSchema(cls, data: dict):
-        board = cls.getInitBoard()
-        size = utils.getBoardSize()
+        raise NotImplemented('Figure this out')
+        board = board_utils.getInitBoard()
+        size = board_utils.getBoardSize()
         log.debug(f'Creating a board of size: {size}')
         team1 = [s for s in data['stones'] if s['color'] == 'red']
         team2 = [s for s in data['stones'] if s['color'] == 'blue']
@@ -231,42 +185,5 @@ class CurlingGame:
     @staticmethod
     def display(board):
         print(" -----------------------")
-        print(list(np.argwhere(board == c.P1)))
-        print(list(np.argwhere(board == c.P2)))
+        print(np.array_str(board))
         print(" -----------------------")
-
-
-# url: left 0 right: 396
-# pymunk: left: -84 right: 84
-
-# url top 12: 392.5 back 12: 700.5
-# pymunk: top 12: 1416.0 back 12: 1560.0
-
-
-def url_to_x(x):
-    v = float(x) * 0.424 - 84
-    return str(int(v * 100) / 100)
-
-
-def url_to_y(y):
-    v = float(y) * 0.462 + 1232
-    return str(int(v * 100) / 100)
-
-
-def x_to_url(x):
-    v = (float(x) + 84) / 0.424
-    return str(int(v * 100) / 100)
-
-
-def y_to_url(y):
-    v = (float(y) - 1232) / 0.462
-    return str(int(v * 100) / 100)
-
-
-def getUrl(board):
-    team1 = zip(board[0:8], board[8:16])
-    team2 = zip(board[16:24], board[24:32])
-    return (
-            'blue=' + '|'.join(x_to_url(x) + ',' + y_to_url(y) for x, y in team2 if 1 < float(y) < 2000) +
-            '&red=' + '|'.join(x_to_url(x) + ',' + y_to_url(y) for x, y in team1 if 1 < float(y) < 2000)
-    )
