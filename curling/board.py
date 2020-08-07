@@ -1,4 +1,3 @@
-import logging
 from typing import Tuple, Generator
 
 import numpy as np
@@ -73,11 +72,6 @@ def getBoardRepr(board):
     return ret
 
 
-def thrownStones(board):
-    logging.warning('Try using sim.space.thrownStonesCount() instead.')
-    return sum(board[c.BOARD_THROWN])
-
-
 def scenario_all_out_of_play(board):
     board[c.BOARD_THROWN].fill(c.THROWN)
     board[c.BOARD_IN_PLAY].fill(c.OUT_OF_PLAY)
@@ -101,6 +95,7 @@ def set_stone(board, player, stone_id, x, y, thrown=c.THROWN, in_play=c.IN_PLAY)
 def configure_hammer_1_scenario(board):
     scenario_all_out_of_play(board)
 
+    # TODO: convert to use set_stone()
     hammer = board[:, -1]
     hammer[c.BOARD_X] = 0
     hammer[c.BOARD_Y] = utils.TEE_LINE
@@ -109,6 +104,7 @@ def configure_hammer_1_scenario(board):
 
 
 def configure_hammer_2_scenario(board):
+    # TODO: convert to use set_stone()
     configure_hammer_1_scenario(board)
 
     stone = board[:, -2]

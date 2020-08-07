@@ -73,7 +73,7 @@ class MCTS():
         state for the current player, then its value is -v for the other player.
 
         Returns:
-            v: the negative of the value of the current canonicalBoard
+            v: the negative of the `value` of the current canonicalBoard
         """
 
         s = self.game.stringRepresentation(canonicalBoard)

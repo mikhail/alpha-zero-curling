@@ -339,6 +339,10 @@ def getNextPlayer(board, player):
         if thrown_data[i + 8] == c.NOT_THROWN:
             return -1 * player
 
+    log.error("Nobody's turn")
+    log.error(f'Player: {player}')
+    log.error('Board:')
+    log.error(board)
     raise NobodysTurn("It is nobody's turn. Player: %s Data row: %s" % (player, thrown_data))
 
 
@@ -347,12 +351,7 @@ def getCanonicalForm(board: np.array, player):
         log.debug('Not flipping the board')
         return board
 
-    log.debug("Flipping the board")
-    log.debug('before:')
-    log.debug(board)
     flip = np.concatenate((board[:, 8:16], board[:, 0:8]), axis=1)
-    log.debug('after:')
-    log.debug(flip)
 
     return flip
 

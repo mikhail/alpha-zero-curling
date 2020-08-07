@@ -1,12 +1,14 @@
+import logging
+import os
+import random
+import sys
+import time
 from collections import deque
 from datetime import datetime
-import logging
-import random
-import time, os, sys
-
 from pickle import Pickler, Unpickler
-from tqdm import tqdm
+
 import numpy as np
+from tqdm import tqdm
 
 from Arena import Arena
 from MCTS import MCTS
@@ -15,9 +17,11 @@ log = logging.getLogger(__name__)
 
 tqdm.monitor_interval = 0
 
+
 def get_hour():
     now = time.time()
     return datetime.fromtimestamp(now).hour
+
 
 class Coach():
     """
@@ -85,7 +89,7 @@ class Coach():
         """
 
         for i in range(1, self.args.numIters + 1):
-            #if 8 < get_hour() < 23:
+            # if 8 < get_hour() < 23:
             #    log.warning('Sleeping to save CPU...')
             #    while 8 < get_hour() < 23:
             #        time.sleep(60)

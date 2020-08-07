@@ -63,11 +63,13 @@ class CurlingGame:
 
         self.sim.setupBoard(board)
 
-        if board_utils.thrownStones(board) >= 16:
+        if self.sim.space.thrownStonesCount() >= 16:
             log.error('Board: strRepr' + self.stringRepresentation(board))
             raise utils.GameException('getValidMoves requested after game end.')
 
         player_turn = utils.getNextPlayer(board, player)
+
+        # Since we got canonical board player_turn should always be 1
         assert player_turn == player, f'Moves requested for player ({player}) do not match next player ({player_turn})'
 
         all_actions = [1] * self.getActionSize()
