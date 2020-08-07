@@ -91,6 +91,7 @@ class Simulation:
         return board
 
     def setupBoard(self, new_board):
+        new_board = new_board.copy()
         log.debug(f'setupBoard({board_utils.getBoardRepr(new_board)})')
         self.resetBoard()
 
