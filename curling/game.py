@@ -145,7 +145,7 @@ class CurlingGame:
 
     @staticmethod
     def stringRepresentation(board: np.array):
-        return json.dumps(board.tolist())
+        return json.dumps(np.around(board, decimals=2).tolist())
 
     @classmethod
     def boardFromString(cls, string: str):
