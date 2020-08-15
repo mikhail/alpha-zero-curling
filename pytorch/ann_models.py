@@ -10,12 +10,12 @@ from Game import Game
 class Model(nn.Sequential):
     def __init__(self, game: Game, args):
         self.args = args
-        logging.info(f"Creating ANN with {args.layers} layers 🧮")
+        logging.info(f"Creating ANN with {args.layers} layers")
         self.board_x, self.board_y = game.getBoardSize()
         in_features = self.board_y
-        height = 256
+        height = 128
         self.out_features = game.getActionSize()
-        hidden_layers = [torch.nn.ReLU() for _ in range(args.layers)]
+        hidden_layers = [torch.nn.Linear(height, height) for _ in range(args.layers)]
         super().__init__(
             torch.nn.Linear(in_features, height),
             *hidden_layers,
@@ -37,6 +37,9 @@ class Model(nn.Sequential):
         s_flat = s_flat.view(-1, size)
         fc_pi = nn.Linear(size, self.out_features)
         fc_v = nn.Linear(size, 1)
+
+        fc_pi = fc_pi.to(s_flat.device)
+        fc_v = fc_v.to(s_flat.device)
 
         pi = fc_pi(s_flat)
         v = fc_v(s_flat)
