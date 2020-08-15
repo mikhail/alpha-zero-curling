@@ -19,16 +19,18 @@ from curling import utils as c_utils
 from curling.game import CurlingGame
 from pytorch.NNet import NNetWrapper as NNet
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('')
 fmt = '%(asctime)s %(filename).5s:%(lineno)s %(funcName)s [%(levelname)s] %(message)s'
 coloredlogs.install(level='INFO', logger=log)
+root = logging.getLogger('root')
+root.setLevel('INFO')
 
 game = CurlingGame()
 
 log.info('Loading NNet for Curling...')
 n1 = NNet(game)
 log.info('Loading checkpoint...')
-n1.load_checkpoint('./curling/data_10_layers_256', 'checkpoint_best.pth.tar')
+n1.load_checkpoint('./curling/data_ann', 'checkpoint_best.pth.tar')
 log.info('Ready! 🚀 ')
 
 AZ_TEAM = int(os.environ.get('AZ_TEAM', '0'))

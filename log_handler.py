@@ -16,8 +16,10 @@ def on_error(logger=None, target_handler=None, capacity=None, level_override=Non
     fmt = '%(asctime)s %(filename)s:%(lineno)s %(funcName)s [%(levelname)s] %(message)s'
 
     target_handler.setFormatter(coloredlogs.ColoredFormatter(fmt))
-    logger = logging.getLogger('')
-    logger.setLevel(level_override)
+    if logger is None:
+        logger = logging.getLogger('')
+    if level_override is not None:
+        logger.setLevel(level_override)
     nrecent = NRecent(capacity, target=target_handler)
 
     def decorator(fn):
