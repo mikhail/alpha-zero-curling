@@ -138,10 +138,13 @@ class CurlingGame:
         return utils.getCanonicalForm(board, player)
 
     @staticmethod
-    def getSymmetries(board, pi):
+    def getSymmetries(board: np.array, pi):
         # TODO: Figure some of this shit out
         #       Full combination of 8 stones is 4!^2 = 576.
-        return [(board, pi)]
+        #       But also vertical symmetry
+        flip = board.copy()
+        flip[c.BOARD_X] *= -1  # vertical symmetry over center line
+        return [(board, pi), (flip, pi)]
 
     @staticmethod
     def stringRepresentation(board: np.array):

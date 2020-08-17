@@ -239,6 +239,19 @@ def test_string_repr_is_symmetric():
 
     np.testing.assert_array_equal(board_setup, board_check)
 
+
+def test_getSymmetries():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    board_utils.configure_hammer_2_scenario(board)
+
+    sym = curl.getSymmetries(board, 0)
+    back = curl.getSymmetries(sym[1][0], 0)
+
+    np.testing.assert_array_equal(board, back[1][0])
+
+
 # NOTE: Commented out because it's really slow.
 # @mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)
 # def test_get_valid_moves_caches():
