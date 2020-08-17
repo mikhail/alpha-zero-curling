@@ -17,3 +17,4 @@ torchfile==0.1.0
 torchvision==0.2.1
 tqdm==4.19.5
 visdom==0.1.7
+websocket-client==0.57.0

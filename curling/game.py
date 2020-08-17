@@ -153,37 +153,26 @@ class CurlingGame:
 
     @classmethod
     def boardFromSchema(cls, data: dict):
-        raise NotImplemented('Figure this out')
         board = board_utils.getInitBoard()
-        size = board_utils.getBoardSize()
-        log.debug(f'Creating a board of size: {size}')
-        team1 = [s for s in data['stones'] if s['color'] == 'red']
-        team2 = [s for s in data['stones'] if s['color'] == 'blue']
-        game_data = data['game']
-        data_row = board[-1]
-        data_row[0:game_data['red']] = c.P1_OUT_OF_PLAY
-        data_row[8:8 + game_data['blue']] = c.P2_OUT_OF_PLAY
-        sid = 0
-        for s in team1:
-            data_row[sid] = c.EMPTY
-            sid += 1
-            x, y = utils.realToBoard(s['x'] * 12, s['y'] * 12)  # web data is in feet, we're in inches
-            if x >= size[0] or y >= size[1]:
-                log.warning('Board schema adding stone beyond board size. Ignoring the stone.')
-                continue
-            log.debug(f'Adding "{c.P1}" @ {x, y}')
-            board[x, y] = c.P1
+        # 1. Set all stones out of play
+        board_utils.scenario_all_out_of_play(board)
 
-        sid = 8
-        for s in team2:
-            data_row[sid] = c.EMPTY
-            sid += 1
-            x, y = utils.realToBoard(s['x'] * 12, s['y'] * 12)  # web data is in feet, we're in inches
-            if x >= size[0] or y >= size[1]:
-                log.warning('Board schema adding stone beyond board size. Ignoring the stone.')
-                continue
-            log.debug(f'Adding "{c.P2}" @ {x, y}')
-            board[x, y] = c.P2
+        # 2. Update stones that are explicitly in play
+        for stone in data['stones']:
+            sid = _get_schema_sid(stone)
+            board[c.BOARD_X][sid] = stone['x'] * 12  # web data is in feet, we're in inches
+            board[c.BOARD_Y][sid] = stone['y'] * 12
+            board[c.BOARD_THROWN][sid] = c.THROWN
+            board[c.BOARD_IN_PLAY][sid] = c.IN_PLAY
+
+        # 3. Update stones that haven't been thrown yet
+        for sid in range(data['game']['red'], 8):
+            board[c.BOARD_THROWN][sid] = c.NOT_THROWN
+            board[c.BOARD_IN_PLAY][sid] = c.IN_PLAY
+
+        for sid in range(data['game']['blue'] + 8, 16):
+            board[c.BOARD_THROWN][sid] = c.NOT_THROWN
+            board[c.BOARD_IN_PLAY][sid] = c.IN_PLAY
 
         str_repr = cls.stringRepresentation(board)
         log.debug('Back to string: %s' % str_repr)
@@ -194,3 +183,12 @@ class CurlingGame:
         print(" -----------------------")
         print(np.array_str(board))
         print(" -----------------------")
+
+
+def _get_schema_sid(stone):
+    """Converts schema-provided stone to a board stone id (sid)."""
+    log.error(stone)
+    if stone['color'] == c.P1_COLOR:
+        return stone['number'] - 1
+    else:
+        return stone['number'] + 8 - 1

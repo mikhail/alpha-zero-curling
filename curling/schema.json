@@ -94,6 +94,22 @@
           "type":  "string",
           "description": "Color of the team that had hammer in first end.",
           "examples": ["red", "blue"]
+        },
+        "red": {
+          "type": "integer",
+          "description": "How many rocks were thrown. 0-8",
+          "default": 1,
+          "examples": [
+            1,8
+          ]
+        },
+        "blue": {
+          "type": "integer",
+          "description": "How many rocks were thrown. 0-8",
+          "default": 1,
+          "examples": [
+            1,8
+          ]
         }
       }
     }
