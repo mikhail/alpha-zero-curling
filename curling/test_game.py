@@ -261,7 +261,8 @@ def test_getSymmetries_count():
 
     board_utils.configure_hammer_2_scenario(board)
     sym = curl.getSymmetries(board, 0)
-    assert len(sym) == 6  # 2 stones = 4 additional syms: 2 swaps + 2 flips
+    # 2 stones yield (14 - 1) permutations.
+    assert len(sym) == 28  # (13 permutations + original) * 2 for flip
 
 # NOTE: Commented out because it's really slow.
 # @mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)

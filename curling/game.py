@@ -139,30 +139,33 @@ class CurlingGame:
 
     @staticmethod
     def getSymmetries(board: np.array, pi):
-        # TODO: Maybe instead of swapping with i+1 swap with random?
         all_symmetries = [(board, pi)]
-        for i in range(0, 15):
-            if i == 7:
-                # Don't want to swap 8th blue and 1st red.
-                continue
-            if board[c.BOARD_THROWN][i] == c.NOT_THROWN and board[c.BOARD_THROWN][i + 1] == c.NOT_THROWN:
-                continue
+        CurlingGame._permuate_symmetries(all_symmetries, board, pi, 0, 8)
+        CurlingGame._permuate_symmetries(all_symmetries, board, pi, 8, 16)
 
-            if board[c.BOARD_IN_PLAY][i] == c.OUT_OF_PLAY and board[c.BOARD_IN_PLAY][i + 1] == c.OUT_OF_PLAY:
-                continue
-
-            swap = board.copy()
-            swap[:, [i, i + 1]] = swap[:, [i + 1, i]]
-            all_symmetries.append((swap, pi))
-
-            swap_flip = swap.copy()
-            swap_flip[c.BOARD_X] *= -1  # vertical symmetry over center line
-            all_symmetries.append((swap_flip, pi))
-
-        flip = board.copy()
-        flip[c.BOARD_X] *= -1  # vertical symmetry over center line
-        all_symmetries.append((flip, pi))
+        for i in range(len(all_symmetries)):
+            s_board, _ = all_symmetries[i]
+            flip = s_board.copy()
+            flip[c.BOARD_X] *= -1  # vertical symmetry over center line
+            all_symmetries.append((flip, pi))
         return all_symmetries
+
+    @staticmethod
+    def _permuate_symmetries(all_symmetries, board, pi, start, stop):
+        log.debug('Permuating symmetries!')
+        for i in range(start, stop):
+            stone1 = board[:, i]
+            if stone1[c.BOARD_THROWN] == c.NOT_THROWN:
+                break
+            for i2 in range(i + 1, stop):
+                stone2 = board[:, i2]
+                if stone2[c.BOARD_THROWN] == c.NOT_THROWN:
+                    break
+                if stone1[c.BOARD_IN_PLAY] == c.OUT_OF_PLAY and stone2[c.BOARD_IN_PLAY] == c.OUT_OF_PLAY:
+                    continue
+                swap = board.copy()
+                swap[:, [i, i2]] = swap[:, [i2, i]]
+                all_symmetries.append((swap, pi))
 
     @staticmethod
     def stringRepresentation(board: np.array):
