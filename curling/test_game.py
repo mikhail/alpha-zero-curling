@@ -240,17 +240,28 @@ def test_string_repr_is_symmetric():
     np.testing.assert_array_equal(board_setup, board_check)
 
 
-def test_getSymmetries():
+def test_getSymmetries_flip():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
     board_utils.configure_hammer_2_scenario(board)
 
     sym = curl.getSymmetries(board, 0)
-    back = curl.getSymmetries(sym[1][0], 0)
+    back = curl.getSymmetries(sym[-1][0], 0)
 
-    np.testing.assert_array_equal(board, back[1][0])
+    np.testing.assert_array_equal(board, back[-1][0])
 
+
+def test_getSymmetries_count():
+    curl = game.CurlingGame()
+
+    board = curl.getInitBoard()
+    sym = curl.getSymmetries(board, 0)
+    assert len(sym) == 2  # Regular and flip
+
+    board_utils.configure_hammer_2_scenario(board)
+    sym = curl.getSymmetries(board, 0)
+    assert len(sym) == 6  # 2 stones = 4 additional syms: 2 swaps + 2 flips
 
 # NOTE: Commented out because it's really slow.
 # @mock.patch("curling.constants.ACTION_LIST", c.SHORT_ACTION_LIST)

@@ -139,12 +139,30 @@ class CurlingGame:
 
     @staticmethod
     def getSymmetries(board: np.array, pi):
-        # TODO: Figure some of this shit out
-        #       Full combination of 8 stones is 4!^2 = 576.
-        #       But also vertical symmetry
+        # TODO: Maybe instead of swapping with i+1 swap with random?
+        all_symmetries = [(board, pi)]
+        for i in range(0, 15):
+            if i == 7:
+                # Don't want to swap 8th blue and 1st red.
+                continue
+            if board[c.BOARD_THROWN][i] == c.NOT_THROWN and board[c.BOARD_THROWN][i + 1] == c.NOT_THROWN:
+                continue
+
+            if board[c.BOARD_IN_PLAY][i] == c.OUT_OF_PLAY and board[c.BOARD_IN_PLAY][i + 1] == c.OUT_OF_PLAY:
+                continue
+
+            swap = board.copy()
+            swap[:, [i, i + 1]] = swap[:, [i + 1, i]]
+            all_symmetries.append((swap, pi))
+
+            swap_flip = swap.copy()
+            swap_flip[c.BOARD_X] *= -1  # vertical symmetry over center line
+            all_symmetries.append((swap_flip, pi))
+
         flip = board.copy()
         flip[c.BOARD_X] *= -1  # vertical symmetry over center line
-        return [(board, pi), (flip, pi)]
+        all_symmetries.append((flip, pi))
+        return all_symmetries
 
     @staticmethod
     def stringRepresentation(board: np.array):
