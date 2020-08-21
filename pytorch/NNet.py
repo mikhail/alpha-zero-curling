@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 from NeuralNet import NeuralNet
 from pytorch.ann_models import Model
-from utils import dotdict
+from utils import dotdict, AverageMeter
 
 tqdm.monitor_interval = 0
 
@@ -41,8 +41,11 @@ class NNetWrapper(NeuralNet):
 
         for _ in tqdm(range(args.epochs), desc="Epoch"):
             self.nnet.train()
+            pi_losses = AverageMeter()
+            v_losses = AverageMeter()
 
-            for _ in tqdm(range(batches), desc="Training"):
+            tqdm1 = tqdm(range(batches), desc="Training")
+            for _ in tqdm1:
                 sample_ids = np.random.randint(len(examples), size=args.batch_size)
                 boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
                 boards = torch.FloatTensor(np.array(boards).astype(np.float64))
@@ -58,6 +61,10 @@ class NNetWrapper(NeuralNet):
                 l_pi = self.loss_pi(target_pis, out_pi)
                 l_v = self.loss_v(target_vs, out_v)
                 total_loss = l_pi + l_v
+
+                pi_losses.update(l_pi.item(), boards.size(0))
+                v_losses.update(l_v.item(), boards.size(0))
+                tqdm1.set_postfix(Loss_pi=pi_losses, Loss_v=v_losses)
 
                 # compute gradient and do SGD step
                 optimizer.zero_grad()
