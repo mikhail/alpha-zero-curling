@@ -1,5 +1,15 @@
 from typing import Tuple
 
+import yaml
+
+with open('shared_constants.yaml') as sc_file:
+    sc = yaml.load(sc_file)
+
+    STONE_RADIUS_IN = sc['STONE_RADIUS_IN']
+    STONE_MASS = sc['STONE_MASS']
+    G_FORCE = sc['G_FORCE']
+    SURFACE_FRICTION = sc['SURFACE_FRICTION']
+
 EMPTY = 0
 
 NOT_THROWN = 0
@@ -24,10 +34,6 @@ BOARD_Y = 1
 BOARD_THROWN = 2
 BOARD_IN_PLAY = 3
 
-STONE_RADIUS_IN = 5.73
-STONE_MASS = 2  # units don't matter... 1 'stone" weight.
-G_FORCE = 9.81  # In meters
-SURFACE_FRICTION = 0.02  # Experimentally picked -- draw weight of 20s
 DT = 0.016  # Simulation deltaTime
 WEIGHT_FT = {
     #    '1': 108,
@@ -55,7 +61,6 @@ ACTION_LIST: Tuple[Tuple[int, str, int]] = tuple(
     for w in WEIGHT_FT.keys()
     for b in BROOMS
 )
-BOARD_RESOLUTION = 0.2  # X pixels per inch. Higher is better but calculations are slower
 SHORT_ACTION_LIST = [
     (-1, '3', -6),  # Draw
     (-1, '3', 6),  # Hit wall

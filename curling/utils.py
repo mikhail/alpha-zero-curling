@@ -149,18 +149,10 @@ class Stone(pymunk.Circle):
 
 def realToBoard(x: float, y: float) -> (int, int):
     return x, y
-    # bx = (x + ICE_WIDTH / 2 - STONE_RADIUS) / X_SCALE * c.BOARD_RESOLUTION
-    # by = (y - HOG_LINE - STONE_RADIUS) / Y_SCALE * c.BOARD_RESOLUTION
-    # ix, iy = proper_round(bx), proper_round(by)
-    # # log.debug(f'realToBoard({x}, {y}) -> int({bx, by}) = {ix, iy}')
-    # return ix, iy
 
 
 def boardToReal(x: float, y: float):
     return x, y
-    # real_x = ((float(x)) / c.BOARD_RESOLUTION) * X_SCALE + STONE_RADIUS - (ICE_WIDTH / 2.0)
-    # real_y = ((float(y)) / c.BOARD_RESOLUTION) * Y_SCALE + STONE_RADIUS + HOG_LINE
-    # return real_x, real_y
 
 
 def getAction(handle: int, weight: str, broom: int):
