@@ -88,6 +88,7 @@ class Simulation:
             board[c.BOARD_THROWN][stone_id] = c.THROWN
             board[c.BOARD_IN_PLAY][stone_id] = c.IN_PLAY
 
+        board_utils.update_distance_and_score(board)
         return board
 
     def setupBoard(self, new_board):
@@ -96,12 +97,12 @@ class Simulation:
         self.resetBoard()
 
         p1_stones = board_utils.stones_for_team(new_board, c.P1)
-        for i, (x, y, thrown, in_play) in enumerate(p1_stones):
+        for i, (x, y, thrown, in_play, *_) in enumerate(p1_stones):
             if thrown and in_play:
                 self.addStone(c.P1_COLOR, x, y, stone_id=i)
 
         p2_stones = board_utils.stones_for_team(new_board, c.P2)
-        for i, (x, y, thrown, in_play) in enumerate(p2_stones):
+        for i, (x, y, thrown, in_play, *_) in enumerate(p2_stones):
             if thrown and in_play:
                 self.addStone(c.P2_COLOR, x, y, stone_id=i)
 

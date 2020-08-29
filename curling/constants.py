@@ -1,8 +1,19 @@
+import os
 from typing import Tuple
 
+import pymunk
 import yaml
 
-with open('shared_constants.yaml') as sc_file:
+
+# TODO: remove this helper function altogether and use multiplier constants.
+def dist(inches=0., feet=0., meters=0.):
+    """Returns value in inches"""
+    return (feet * 12.0) + inches + (meters * 39.3701)
+
+
+script_dir = os.path.dirname(__file__)
+
+with open(script_dir + '/shared_constants.yaml') as sc_file:
     sc = yaml.load(sc_file)
 
     STONE_RADIUS_IN = sc['STONE_RADIUS_IN']
@@ -17,6 +28,9 @@ THROWN = 1
 
 OUT_OF_PLAY = 0
 IN_PLAY = 1
+
+NOT_SCORING = 0
+SCORING = 1
 
 P1_COLOR = 'red'
 P1 = 1
@@ -33,6 +47,8 @@ BOARD_X = 0
 BOARD_Y = 1
 BOARD_THROWN = 2
 BOARD_IN_PLAY = 3
+BOARD_DISTANCE = 4
+BOARD_SCORING = 5
 
 DT = 0.016  # Simulation deltaTime
 WEIGHT_FT = {
@@ -67,3 +83,6 @@ SHORT_ACTION_LIST = [
     (1, '7', 6),  # button
     (1, 'control', -6)  # through
 ]
+
+# TODO: Move all constants from utils here.
+BUTTON_POSITION = pymunk.Vec2d(0, dist(feet=124.5))

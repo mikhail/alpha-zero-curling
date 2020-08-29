@@ -2,6 +2,7 @@ from unittest import mock
 
 import numpy as np
 
+import curling.constants
 import log_handler
 from curling import board as board_utils
 from curling import constants as c
@@ -16,7 +17,7 @@ def test_board_is_2d():
     board = curl.getInitBoard()
     height, width = board.shape
     assert width == 16
-    assert height == 4
+    assert height == 6
 
 
 def test_CanonicalBoard_unchanged():
@@ -89,7 +90,7 @@ def test_gameEnded_SlightlyOffCenter_y_1():
 
     board_utils.scenario_all_out_of_play(board)
 
-    x, y = game.BUTTON_POSITION
+    x, y = curling.constants.BUTTON_POSITION
     # Team 2 is winning by 1
     board_utils.set_stone(board, c.P2, 7, x, y - 1 * inch)
     curl.sim.setupBoard(board)
@@ -105,7 +106,7 @@ def test_gameEnded_SlightlyOffCenter_y_2():
     board = curl.getInitBoard()
     board_utils.scenario_all_out_of_play(board)
 
-    x, y = game.BUTTON_POSITION
+    x, y = curling.constants.BUTTON_POSITION
     # Team 2 is winning by 1
     board_utils.set_stone(board, c.P2, 7, x, y + 1 * inch)
     curl.sim.setupBoard(board)
@@ -121,7 +122,7 @@ def test_gameEnded_x_HammerCloser():
     board = curl.getInitBoard()
     board_utils.scenario_all_out_of_play(board)
 
-    x, y = game.BUTTON_POSITION
+    x, y = curling.constants.BUTTON_POSITION
 
     board_utils.set_stone(board, c.P1, 7, x, y + 10 * inch)
     board_utils.set_stone(board, c.P2, 7, x, y - 1 * inch)
@@ -138,7 +139,7 @@ def test_gameEnded_y_HammerCloser():
     board = curl.getInitBoard()
     board_utils.scenario_all_out_of_play(board)
 
-    x, y = game.BUTTON_POSITION
+    x, y = curling.constants.BUTTON_POSITION
 
     board_utils.set_stone(board, c.P1, 7, x, y - 10 * inch)
     board_utils.set_stone(board, c.P2, 7, x, y + 1 * inch)
@@ -156,7 +157,7 @@ def test_gameEnded_SlightlyOffCenter_x_1():
 
     board_utils.scenario_all_out_of_play(board)
 
-    x, y = game.BUTTON_POSITION
+    x, y = curling.constants.BUTTON_POSITION
     # Team 2 is winning by 1
     board_utils.set_stone(board, c.P2, 7, x - 1 * inch, y)
     curl.sim.setupBoard(board)
@@ -173,7 +174,7 @@ def test_gameEnded_SlightlyOffCenter_x_2():
 
     board_utils.scenario_all_out_of_play(board)
 
-    x, y = game.BUTTON_POSITION
+    x, y = curling.constants.BUTTON_POSITION
     # Team 2 is winning by 1
     board_utils.set_stone(board, c.P2, 7, x + 1 * inch, y)
 

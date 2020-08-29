@@ -1,23 +1,52 @@
 from typing import Tuple, Generator
 
 import numpy as np
+import pymunk
 
 from curling import constants as c
 from curling import utils
-
 
 # Board shape"
 # x values. p1...p1, p2...p2
 # y values
 # 0,1 - has this stone been thrown yet
 # 0,1 - is this stone "valid" (1) or "out of play" (0) (touched a wall)
+# distance to pin
+# 0,1 - is scoring
 
 # [
 #     [0] * 16,
 #     [0] * 16,
 #     [0] * 16,
 #     [1] * 16
+#     [0] * 16,
+#     [0] * 16,
 # ]
+
+_HOUSE_RAIDUS = utils.dist(feet=6, inches=c.STONE_RADIUS_IN)
+
+
+def update_distance_and_score(board: np.array):
+    for stone in board.T:
+        xy = pymunk.Vec2d(stone[c.BOARD_X], stone[c.BOARD_Y])
+        stone[c.BOARD_DISTANCE] = utils.euclid(xy, c.BUTTON_POSITION)
+
+    shot_stones = np.argsort(board[c.BOARD_DISTANCE])
+
+    if shot_stones[0] < 8:
+        team_range = range(0,8)
+    else:
+        team_range = range(8,16)
+
+    board[c.BOARD_SCORING].fill(c.NOT_SCORING)
+    for i in range(8):
+      stone_id = shot_stones[i]
+      if stone_id in team_range:
+        board[c.BOARD_SCORING][stone_id] = c.SCORING
+      else:
+          break
+
+
 
 def stones_for_team(board: np.array, team: int):
     start = 0
@@ -52,15 +81,17 @@ def getInitBoard():
     # y values
     # 0,1 - has this stone been thrown yet
     # 0,1 - is this stone "in play" (1) or "out of play" (0) (touched a wall)
-    board[c.BOARD_X] = [0] * 16
-    board[c.BOARD_Y] = [0] * 16
-    board[c.BOARD_THROWN] = [c.NOT_THROWN] * 16
-    board[c.BOARD_IN_PLAY] = [c.IN_PLAY] * 16
+    board[c.BOARD_X].fill(0)
+    board[c.BOARD_Y].fill(0)
+    board[c.BOARD_THROWN].fill(c.NOT_THROWN)
+    board[c.BOARD_IN_PLAY].fill(c.IN_PLAY)
+    board[c.BOARD_DISTANCE].fill(0)
+    board[c.BOARD_SCORING].fill(c.NOT_SCORING)
     return board
 
 
 def getBoardSize():
-    return 4, 16
+    return 6, 16
 
 
 def getBoardRepr(board):
@@ -68,13 +99,17 @@ def getBoardRepr(board):
     ret += str(list(map(int, board[0]))) + "\n"
     ret += str(list(map(int, board[1]))) + "\n"
     ret += str(list(map(int, board[2]))) + "\n"
-    ret += str(list(map(int, board[3])))
+    ret += str(list(map(int, board[3]))) + "\n"
+    ret += str(list(map(int, board[4]))) + "\n"
+    ret += str(list(map(int, board[5])))
     return ret
 
 
 def scenario_all_out_of_play(board):
     board[c.BOARD_THROWN].fill(c.THROWN)
     board[c.BOARD_IN_PLAY].fill(c.OUT_OF_PLAY)
+    board[c.BOARD_DISTANCE].fill(0)
+    board[c.BOARD_SCORING].fill(c.NOT_SCORING)
 
 
 def set_stone(board, player, stone_id, x, y, thrown=c.THROWN, in_play=c.IN_PLAY):

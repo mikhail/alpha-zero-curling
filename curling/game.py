@@ -10,8 +10,6 @@ from curling import utils
 
 log = logging.getLogger(__name__)
 
-BUTTON_POSITION = utils.pymunk.Vec2d(0, utils.dist(feet=124.5))  # TODO: MOVE IT OUT OF HERE
-
 
 class GameException(Exception):
     """Logic within game is broken."""
@@ -105,8 +103,8 @@ class CurlingGame:
             log.debug(s)
 
         # TODO: Optimization - don't compute euclid twice
-        near_button = sorted(stones, key=lambda s: utils.euclid(s.body.position, BUTTON_POSITION))
-        in_house = list(filter(lambda s: utils.euclid(s.body.position, BUTTON_POSITION) < house_radius, near_button))
+        near_button = sorted(stones, key=lambda s: utils.euclid(s.body.position, c.BUTTON_POSITION))
+        in_house = list(filter(lambda s: utils.euclid(s.body.position, c.BUTTON_POSITION) < house_radius, near_button))
 
         if len(in_house) == 0:
             # Draw is better than being forced to 1

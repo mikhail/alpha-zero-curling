@@ -208,3 +208,15 @@ def test_two_wall_collision():
     #
     # curl = game.CurlingGame()
     # curl.getNextState(curl.boardFromString(bs), 1, 178)
+
+def test_getNextState_has_extra_data():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    next_board, _ = curl.getNextState(board, c.P1, utils.getAction(-1, '5', -1))
+
+    np.testing.assert_almost_equal(
+        next_board[:,0],
+        [70.3, 1450, 1, 1, 81.2, 1],
+        decimal=-1
+    )
