@@ -105,6 +105,9 @@ def getBoardRepr(board):
     return ret
 
 
+def thrownStones(board):
+    return np.sum(board[c.BOARD_THROWN])
+
 def scenario_all_out_of_play(board):
     board[c.BOARD_THROWN].fill(c.THROWN)
     board[c.BOARD_IN_PLAY].fill(c.OUT_OF_PLAY)
@@ -126,6 +129,8 @@ def set_stone(board, player, stone_id, x, y, thrown=c.THROWN, in_play=c.IN_PLAY)
     stone[c.BOARD_THROWN] = thrown
     stone[c.BOARD_IN_PLAY] = in_play
 
+    update_distance_and_score(board)
+
 
 def configure_hammer_1_scenario(board):
     scenario_all_out_of_play(board)
@@ -137,6 +142,8 @@ def configure_hammer_1_scenario(board):
     hammer[c.BOARD_THROWN] = c.THROWN
     hammer[c.BOARD_IN_PLAY] = c.IN_PLAY
 
+    update_distance_and_score(board)
+
 
 def configure_hammer_2_scenario(board):
     # TODO: convert to use set_stone()
@@ -147,3 +154,5 @@ def configure_hammer_2_scenario(board):
     stone[c.BOARD_Y] = utils.TEE_LINE + utils.STONE_RADIUS
     stone[c.BOARD_THROWN] = c.THROWN
     stone[c.BOARD_IN_PLAY] = c.IN_PLAY
+
+    update_distance_and_score(board)

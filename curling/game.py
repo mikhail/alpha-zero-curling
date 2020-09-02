@@ -10,6 +10,8 @@ from curling import utils
 
 log = logging.getLogger(__name__)
 
+_TIED_SCORE = 0.00001
+
 
 class GameException(Exception):
     """Logic within game is broken."""
@@ -86,50 +88,21 @@ class CurlingGame:
 
         # Convert everything to first-player perspective
         board = self.getCanonicalForm(board, player)
-        player_color = c.P1_COLOR  # Because of the canonical form
 
-        self.sim.setupBoard(board)
         log.debug(f'getGameEnded({board})')
-        thrown_stones = self.sim.space.thrownStonesCount()
-        # thrown_stones = board_utils.thrownStones(board)
+        thrown_stones = board_utils.thrownStones(board)
         if thrown_stones < 16:
             log.debug('getGameEnded (thrown = %s) -> 0', thrown_stones)
             return 0
 
-        house_radius = utils.dist(feet=6, inches=c.STONE_RADIUS_IN)
-        stones = self.sim.getStones()
-        log.debug('Stones in play:')
-        for s in stones:
-            log.debug(s)
-
-        # TODO: Optimization - don't compute euclid twice
-        near_button = sorted(stones, key=lambda s: utils.euclid(s.body.position, c.BUTTON_POSITION))
-        in_house = list(filter(lambda s: utils.euclid(s.body.position, c.BUTTON_POSITION) < house_radius, near_button))
-
-        if len(in_house) == 0:
-            # Draw is better than being forced to 1
-            log.debug('getGameEnded -> draw')
-            return 0.00001
-
-        win_count = 0
-        win_color = in_house[0].color
-        while len(in_house) > win_count and in_house[win_count].color == win_color:
-            win_count += 1
-
-        assert win_count > 0
-
-        we_won = win_color == player_color
-        log.debug(f"Who won? we_won = win_color == player_color ({we_won} = {win_color} == {player_color})")
-
-        # Ignoring all the fancy logic about hammer or winning by 1 is bad.
-        # Too complicated and possibly invalidates the training model
-        # because same scenario (one rock in house) has different value for hammer vs not.
-        win_value = win_count
-        if not we_won:
-            win_value *= -1
-
-        log.debug('getGameEnded -> %s', win_value)
-        return win_value
+        p1_score = np.sum(board[c.BOARD_SCORING][0:8])
+        p2_score = np.sum(board[c.BOARD_SCORING][8:16])
+        if p1_score == p2_score:
+            return _TIED_SCORE
+        if p1_score > p2_score:
+            return p1_score
+        else:
+            return -1 * p2_score
 
     @staticmethod
     def getCanonicalForm(board, player):
@@ -196,6 +169,7 @@ class CurlingGame:
             board[c.BOARD_THROWN][sid] = c.NOT_THROWN
             board[c.BOARD_IN_PLAY][sid] = c.IN_PLAY
 
+        board_utils.update_distance_and_score(board)
         str_repr = cls.stringRepresentation(board)
         log.debug('Back to string: %s' % str_repr)
         return board
