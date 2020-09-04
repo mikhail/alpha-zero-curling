@@ -188,6 +188,7 @@ class Simulation:
             self.space.step(deltaTime)
 
             if self.space.five_rock_rule_violation:
+                # TODO: Move this logic to game.getNextState()
                 log.debug('Warning: 5 rock rule violated. Resetting the board!')
                 self.setupBoard(self.board_before_action)
                 self.addShooterAsInvalid()

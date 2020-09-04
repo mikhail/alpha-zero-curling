@@ -61,11 +61,9 @@ class CurlingGame:
         log.debug(f'Canonicalized for player({player}):')
         log.debug(board_utils.getBoardRepr(board))
 
-        self.sim.setupBoard(board)
-
-        if self.sim.space.thrownStonesCount() >= 16:
+        if board_utils.thrownStones(board) >= 16:
             log.error('Board: strRepr' + self.stringRepresentation(board))
-            raise utils.GameException('getValidMoves requested after game end.')
+            raise GameException('getValidMoves requested after game end.')
 
         player_turn = utils.getNextPlayer(board, player)
 

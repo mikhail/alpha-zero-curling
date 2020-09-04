@@ -182,7 +182,7 @@ def stone_velocity(body, gravity, damping, dt):
     F_fr = c.SURFACE_FRICTION * F_normal
 
     mult = min(body.velocity.length, 1)
-    body.force = body.velocity.normalized() * F_fr * -1 * mult
+    body.force = body.velocity.normalized() * (F_fr * -1 * mult)
 
     F_curl = getCurlingForce(body)
     body.force -= F_curl
@@ -207,7 +207,8 @@ def calculateVelocityVector(weight: str, broom: int):
 
     x = dist(feet=broom)
     y = weight_to_dist(weight)
-    direction = pymunk.Vec2d(x, y).normalized()
+    direction = pymunk.Vec2d(x, y)
+    direction.normalize_return_length()
     return direction * vel
 
 
@@ -279,7 +280,7 @@ def sqGauss(x: float, m: float = 1, o: float = 0, em: float = 1, eo: float = 0) 
     return (x * m + o) * math.exp(-(math.pow(x, 2) * em + eo))
 
 
-def getCurlingForce(body) -> pymunk.Vec2d:
+def getCurlingForce(body:pymunk.Body) -> pymunk.Vec2d:
     # numbers not the same as index.ts because this is now Force not Velocity.
 
     speed = body.velocity.length / 25
@@ -291,7 +292,7 @@ def getCurlingForce(body) -> pymunk.Vec2d:
         curl_effect = 0
 
     direction = 90 if body.angular_velocity < 0 else -90
-    curlVector = body.velocity.normalized() * curlFromSpeed * curl_effect
+    curlVector = body.velocity.normalized() * (curlFromSpeed * curl_effect)
     curlVector.rotate_degrees(direction)
 
     # print(f"speed={speed} curl={curlFromSpeed} effect={curl_effect} vec={curlVector.length}")

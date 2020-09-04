@@ -228,6 +228,19 @@ def test_get_valid_moves():
     assert sum(valid) == 2
 
 
+def test_get_valid_moves_too_late():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+    board_utils.scenario_all_out_of_play(board)
+
+    try:
+        curl.getValidMoves(board, 1)
+    except game.GameException:
+        pass
+    else:
+        raise Exception('getValidMoves should prohibit 16 stones.')
+
+
 def test_string_repr_is_symmetric():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
