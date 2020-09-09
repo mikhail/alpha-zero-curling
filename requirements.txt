@@ -1,3 +1,4 @@
+PyYAML==5.3.1
 coloredlogs==14.0
 pymunk==5.6.0
 torch==1.6.0
