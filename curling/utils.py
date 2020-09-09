@@ -207,6 +207,7 @@ def calculateVelocityVector(weight: str, broom: int):
 
     x = dist(feet=broom)
     y = weight_to_dist(weight)
+    # TODO: Optimize by setting length instead of normalizing + multiplying
     direction = pymunk.Vec2d(x, y)
     direction.normalize_return_length()
     return direction * vel
