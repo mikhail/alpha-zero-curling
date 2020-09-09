@@ -1,5 +1,6 @@
 PyYAML==5.3.1
 coloredlogs==14.0
 pymunk==5.6.0
+pytest==6.0.1
 torch==1.6.0
 tqdm==4.48.2

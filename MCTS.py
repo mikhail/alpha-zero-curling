@@ -81,60 +81,17 @@ class MCTS():
 
         if s not in self.Es:
             self.Es[s] = self.game.getGameEnded(canonicalBoard, 1)
+            log.debug('Es[s]: %s', self.Es[s])
 
-        log.debug('Es[s]: %s', self.Es[s])
         if self.Es[s] != 0:
             # terminal node
             return -self.Es[s]
 
         if s not in self.Ps:
-            # leaf node
-            self.Ps[s], v = self.nnet.predict(canonicalBoard)
-            valids = self.game.getValidMoves(canonicalBoard, 1)
-            self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
-            sum_Ps_s = np.sum(self.Ps[s])
-            if sum_Ps_s > 0:
-                self.Ps[s] /= sum_Ps_s  # renormalize
-            else:
-                # if all valid moves were masked make all valid moves equally probable
-
-                # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
-                # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.   
-                print("All valid moves were masked, doing a workaround.")
-                print(f"Ps[s] = {self.Ps[s]}")
-                print(f"valids = {valids}")
-                self.Ps[s] = self.Ps[s] + valids
-                self.Ps[s] /= np.sum(self.Ps[s])
-
-            self.Vs[s] = valids
-            self.Ns[s] = 0
+            v = self._populate_Pss(canonicalBoard, s)
             return -v
 
-        valids = self.Vs[s]
-        cur_best = -float('inf')
-        best_act = -1
-
-        # pick the action with the highest upper confidence bound
-        action_size = self.game.getActionSize()
-        for a in range(action_size):
-            if valids[a]:
-                if (s, a) in self.Qsa:
-                    u = self.Qsa[(s, a)] + self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
-                            1 + self.Nsa[(s, a)])
-                else:
-                    u = self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
-
-                if u > cur_best:
-                    cur_best = u
-                    best_act = a
-
-        if best_act < 0:
-            log.error('Failed to find best action: %s', best_act)
-            log.error('Action size: %s', action_size)
-            log.error('Valid choices: %s', sum(valids))
-            raise Exception('Sanity check failed.')
-
-        a = best_act
+        a = self._get_best_action(s)
         next_s, next_player = self.game.getNextState(canonicalBoard, 1, a)
         next_s = self.game.getCanonicalForm(next_s, next_player)
 
@@ -150,3 +107,51 @@ class MCTS():
 
         self.Ns[s] += 1
         return -v
+
+    def _populate_Pss(self, canonicalBoard, s):
+        # leaf node
+        self.Ps[s], v = self.nnet.predict(canonicalBoard)
+        valids = self.game.getValidMoves(canonicalBoard, 1)
+        self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
+        sum_Ps_s = np.sum(self.Ps[s])
+        if sum_Ps_s > 0:
+            self.Ps[s] /= sum_Ps_s  # renormalize
+        else:
+            # if all valid moves were masked make all valid moves equally probable
+
+            # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
+            # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.
+            print("All valid moves were masked, doing a workaround.")
+            print(f"Ps[s] = {self.Ps[s]}")
+            print(f"valids = {valids}")
+            self.Ps[s] = self.Ps[s] + valids
+            self.Ps[s] /= np.sum(self.Ps[s])
+        self.Vs[s] = valids
+        self.Ns[s] = 0
+        return v
+
+    def _get_best_action(self, s):
+        """pick the action with the highest upper confidence bound"""
+
+        valids = self.Vs[s]
+        cur_best = -float('inf')
+        best_act = -1
+        action_size = self.game.getActionSize()
+        for a in range(action_size):
+            if valids[a]:
+                if (s, a) in self.Qsa:
+                    u = self.Qsa[(s, a)] + self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
+                            1 + self.Nsa[(s, a)])
+                else:
+                    u = self.args.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+
+                if u > cur_best:
+                    cur_best = u
+                    best_act = a
+        if best_act < 0:
+            log.error('Failed to find best action: %s', best_act)
+            log.error('Action size: %s', action_size)
+            log.error('Valid choices: %s', sum(valids))
+            raise Exception('Sanity check failed.')
+        a = best_act
+        return a
