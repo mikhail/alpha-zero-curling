@@ -41,7 +41,7 @@ class Arena():
         curPlayer = 1
         board = self.game.getInitBoard()
         total_moves = 16  # Curling
-        progressbar = tqdm(total=total_moves, disable=verbose)  # Don't want a bar when pitting
+        progressbar = tqdm(total=total_moves, disable=verbose, ncols=100)  # Don't want a bar when pitting
         it = 0
         end_score = self.game.getGameEnded(board, curPlayer)
         while end_score == 0:
@@ -82,7 +82,7 @@ class Arena():
         """
         p1_score = 0
         p2_score = 0
-        for _ in tqdm(range(math.ceil(num / 2)), desc="Arena.playGames p1/p2"):
+        for _ in tqdm(range(math.ceil(num / 2)), desc="Arena.playGames p1/p2", ncols=100):
             res = self.playGame(verbose=verbose)
             if res == 0:
                 raise Exception('WHOA playGame ended before end of game.')
@@ -93,7 +93,7 @@ class Arena():
 
         self.player1, self.player2 = self.player2, self.player1
 
-        for _ in tqdm(range(math.floor(num / 2)), desc="Arena.playGames p2/p1"):
+        for _ in tqdm(range(math.floor(num / 2)), desc="Arena.playGames p2/p1", ncols=100):
             res = self.playGame(verbose=verbose)
             if res == 0:
                 raise Exception('WHOA playGame ended before end of game.')

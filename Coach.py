@@ -60,7 +60,7 @@ class Coach():
         episode_step = 0
 
         result = 0
-        for _ in tqdm(range(16), desc="Episode"):
+        for _ in tqdm(range(16), desc="Episode", ncols=100):
             episode_step += 1
             canonicalBoard = self.game.getCanonicalForm(board, player)
             temp = int(episode_step < self.args.tempThreshold)
@@ -99,7 +99,7 @@ class Coach():
             if not self.skipFirstSelfPlay or i > 1:
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
-                for _ in tqdm(range(self.args.numEps), desc="Self Play"):
+                for _ in tqdm(range(self.args.numEps), desc="Self Play", ncols=100):
                     self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
                     iterationTrainExamples += self.executeEpisode()
 

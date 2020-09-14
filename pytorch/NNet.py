@@ -39,12 +39,12 @@ class NNetWrapper(NeuralNet):
         optimizer = optim.Adam(self.nnet.parameters())
         batches = int(len(examples) / args.batch_size)
 
-        for _ in tqdm(range(args.epochs), desc="Epoch"):
+        for _ in tqdm(range(args.epochs), desc="Epoch", ncols=100):
             self.nnet.train()
             pi_losses = AverageMeter()
             v_losses = AverageMeter()
 
-            tqdm1 = tqdm(range(batches), desc="Training")
+            tqdm1 = tqdm(range(batches), desc="Training", ncols=100, leave=False)
             for _ in tqdm1:
                 sample_ids = np.random.randint(len(examples), size=args.batch_size)
                 boards, pis, vs = list(zip(*[examples[i] for i in sample_ids]))
