@@ -25,12 +25,15 @@ coloredlogs.install(level='INFO', logger=log)
 root = logging.getLogger('root')
 root.setLevel('INFO')
 
+logging.getLogger('engineio').setLevel('WARN')
+logging.getLogger('socketio').setLevel('WARN')
+
 game = CurlingGame()
 
 log.info('Loading NNet for Curling...')
 n1 = NNet(game)
 log.info('Loading checkpoint...')
-n1.load_checkpoint('./curling/data_ann', 'checkpoint_best.pth.tar')
+n1.load_checkpoint('./kirill/ann_6_features/', 'checkpoint_best.pth.tar')
 log.info('Ready! 🚀 ')
 
 AZ_TEAM = int(os.environ.get('AZ_TEAM', '0'))
@@ -44,21 +47,20 @@ AZ_NAME = f"🧠 AlphaZero ({AZ_COLOR})"
 def get_best_action(board, use_mcts: bool, player: AZ_TEAM_OMO):
     if use_mcts:
         now = time.time()
-        args1 = utils.dotdict({'numMCTSSims': 30, 'cpuct': 1.0})
+        args1 = utils.dotdict({'numMCTSSims': 180, 'cpuct': 1.0})
         mcts1 = MCTS(game, n1, args1)
         board = game.getCanonicalForm(board, player)
-        while time.time() - now < 20:  # think for X seconds
-            best_action = np.argmax(mcts1.getActionProb(board, temp=0))
-            log.info('Considering the shot: ' + str(c_utils.decodeAction(best_action)))
+        best_action = np.argmax(mcts1.getActionProb(board, temp=0))
+        log.info('Considering the shot: ' + str(c_utils.decodeAction(best_action)))
     else:
         p, v = n1.predict(board)
         best_action = np.argmax(p)
     handle, weight, broom = c_utils.decodeAction(best_action)
-    return {
-        "handle": handle,
-        "weight": str(weight).title(),
-        "broom": broom
-    }
+    next_state, next_player = game.getNextState(board, 1, int(best_action))
+    next_state = game.getCanonicalForm(next_state, next_player)
+
+    action_obj = {"handle": handle, "weight": str(weight).title(), "broom": broom}
+    return action_obj, next_state
 
 
 sio = socketio.Client(logger=False)
@@ -67,7 +69,7 @@ sio = socketio.Client(logger=False)
 @sio.event
 def connect():
     log.info('connection established')
-    sio.emit('update_name', AZ_NAME)
+    sio.emit('set_username', AZ_NAME)
 
 
 @sio.event
@@ -80,6 +82,7 @@ def shot(data):
 def state(data):
     log.info('message received with %s', data)
     jsonschema.validate(data, json.load(open('./curling/schema.json')))
+
     board = game.boardFromSchema(data)
     try:
         next_player = c_utils.getNextPlayer(board, c.P1)
@@ -91,22 +94,23 @@ def state(data):
     if next_player != AZ_TEAM_OMO:
         return
     log.info('Got board. calculating action')
-    sio.emit('update_name', AZ_NAME + " thinking ...")
-    action = get_best_action(board, use_mcts=True, player=AZ_TEAM_OMO)
+    sio.emit('set_username', AZ_NAME + " thinking ...")
+    action, state = get_best_action(board, use_mcts=True, player=AZ_TEAM_OMO)
     action['color'] = AZ_COLOR
     action['handle'] *= 0.07
 
     log.info('responding with action: %s' % (action,))
 
-    sio.emit('update_name', AZ_NAME)
+    sio.emit('set_username', AZ_NAME)
     sio.emit('shot', action)
-
+    time.sleep(5)
+    sio.emit('set_state', game.boardToSchema(state))
 
 @sio.event
 def disconnect():
     log.info('disconnected from server')
 
 
-#sio.connect('http://localhost:3000/?room=/curling.gg/vs_ai')
-sio.connect('http://curling-socket.herokuapp.com/?room=/vs-ai')
+sio.connect('http://localhost:3000/?room=/vs_ai')
+# sio.connect('http://curling-socket.herokuapp.com/?room=/vs-ai')
 sio.wait()
