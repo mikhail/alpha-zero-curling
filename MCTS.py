@@ -29,6 +29,15 @@ class MCTS:
         self.Es = {}  # stores game.getGameEnded ended for board s
         self.Vs = {}  # stores game.getValidMoves for board s
 
+        manager = mp.Manager()
+        self.Qsa = manager.dict(self.Qsa)  # stores Q values for s,a (as defined in the paper)
+        self.Nsa = manager.dict(self.Nsa)  # stores #times edge s,a was visited
+        self.Ns = manager.dict(self.Ns) # stores #times board s was visited
+        self.Ps = manager.dict(self.Ps)  # stores initial policy (returned by neural net)
+
+        self.Es = manager.dict(self.Es)  # stores game.getGameEnded ended for board s
+        self.Vs = manager.dict(self.Vs)  # stores game.getValidMoves for board s
+
     def getActionProb(self, board, temp=1):
         """
         This function performs numMCTSSims simulations of MCTS starting from
@@ -38,20 +47,15 @@ class MCTS:
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        manager = mp.Manager()
-        self.Qsa = manager.dict(self.Qsa)  # stores Q values for s,a (as defined in the paper)
-        self.Nsa = manager.dict(self.Nsa)  # stores #times edge s,a was visited
-        self.Ns = manager.dict(self.Ns) # stores #times board s was visited
-        self.Ps = manager.dict(self.Ps)  # stores initial policy (returned by neural net)
-
-        self.Es = manager.dict(self.Es)  # stores game.getGameEnded ended for board s
-        self.Vs = manager.dict(self.Vs)  # stores game.getValidMoves for board s
-        processes = []
-        for _ in range(self.args.numMCTSSims):
-            p = mp.Process(target=self.search, args=(board,))
-            processes.append(p)
-        [p.start() for p in processes]
-        [p.join() for p in processes]
+        log.warning(f"Num sims: {self.args.numMCTSSims}")
+        p1 = mp.Process(target=self.search, args=(board,))
+        p2 = mp.Process(target=self.search, args=(board,))
+        log.warning("Starting parallel processing...")
+        p1.start()
+        p1.join()
+        p2.start()
+        p2.join()
+        log.warning("Done")
 
         s = self.game.stringRepresentation(board)
         counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 for a in range(self.game.getActionSize())]
@@ -88,6 +92,7 @@ class MCTS:
         Returns:
             v: the negative of the `value` of the current canonicalBoard
         """
+        log.info('Searching...')
         s = self.game.stringRepresentation(canonicalBoard)
         log.debug('search() stringRepresentation (s): %s', s)
 
