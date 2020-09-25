@@ -1,5 +1,6 @@
 import logging
 import math
+import multiprocessing as mp
 
 import numpy as np
 from tqdm import tqdm
@@ -11,7 +12,7 @@ EPS = 1e-8
 log = logging.getLogger(__name__)
 
 
-class MCTS():
+class MCTS:
     """
     This class handles the MCTS tree.
     """
@@ -28,19 +29,31 @@ class MCTS():
         self.Es = {}  # stores game.getGameEnded ended for board s
         self.Vs = {}  # stores game.getValidMoves for board s
 
-    def getActionProb(self, canonicalBoard, temp=1):
+    def getActionProb(self, board, temp=1):
         """
         This function performs numMCTSSims simulations of MCTS starting from
-        canonicalBoard.
+        board.
 
         Returns:
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        for i in tqdm(range(self.args.numMCTSSims), desc="MCTS", leave=False, ncols=100):
-            self.search(canonicalBoard)
+        manager = mp.Manager()
+        self.Qsa = manager.dict(self.Qsa)  # stores Q values for s,a (as defined in the paper)
+        self.Nsa = manager.dict(self.Nsa)  # stores #times edge s,a was visited
+        self.Ns = manager.dict(self.Ns) # stores #times board s was visited
+        self.Ps = manager.dict(self.Ps)  # stores initial policy (returned by neural net)
 
-        s = self.game.stringRepresentation(canonicalBoard)
+        self.Es = manager.dict(self.Es)  # stores game.getGameEnded ended for board s
+        self.Vs = manager.dict(self.Vs)  # stores game.getValidMoves for board s
+        processes = []
+        for _ in range(self.args.numMCTSSims):
+            p = mp.Process(target=self.search, args=(board,))
+            processes.append(p)
+        [p.start() for p in processes]
+        [p.join() for p in processes]
+
+        s = self.game.stringRepresentation(board)
         counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 for a in range(self.game.getActionSize())]
 
         if temp == 0:
@@ -75,7 +88,6 @@ class MCTS():
         Returns:
             v: the negative of the `value` of the current canonicalBoard
         """
-
         s = self.game.stringRepresentation(canonicalBoard)
         log.debug('search() stringRepresentation (s): %s', s)
 

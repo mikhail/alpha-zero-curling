@@ -2,6 +2,7 @@ import json
 import logging
 
 import numpy as np
+#TODO add LRU (or better MRU) cache back
 
 from curling import board as board_utils
 from curling import constants as c
@@ -42,7 +43,7 @@ class CurlingGame:
         assert totalThrownStones_before < 16
         self.sim.setupAction(player, action)
         self.sim.run()
-        assert totalThrownStones_before + 1 == self.sim.space.thrownStonesCount()
+        assert totalThrownStones_before + 1 == self.sim.space.thrownStonesCount(), f"Thrown stone count didn't increase correctly. before: {totalThrownStones_before}. now: {self.sim.space.thrownStonesCount()}"
 
         next_board = self.sim.getBoard()
         next_player = -player
@@ -152,7 +153,7 @@ class CurlingGame:
 
         # 2. Update stones that are explicitly in play
         for stone in data['stones']:
-            sid = _get_schema_sid(stone)
+            sid = _get_board_stone_id(stone)
             board[c.BOARD_X][sid] = stone['x'] * 12  # web data is in feet, we're in inches
             board[c.BOARD_Y][sid] = stone['y'] * 12
             board[c.BOARD_THROWN][sid] = c.THROWN
@@ -172,6 +173,20 @@ class CurlingGame:
         log.debug('Back to string: %s' % str_repr)
         return board
 
+    @classmethod
+    def boardToSchema(cls, board):
+        # {
+        #   "stones": [
+        #     {"number":1,"color":"red","x":0.049079096815204386,"y":119.49696924446536,"angle":-45.89650666640686}
+        #   ],
+        #   "game":{"end":1,"firstHammer":"blue","red":1,"blue":0}}
+        schema = {
+            'stones': _get_schema_stones(board),
+            'game': _get_schema_game(board)
+        }
+
+        return schema
+
     @staticmethod
     def display(board):
         print(" -----------------------")
@@ -179,10 +194,30 @@ class CurlingGame:
         print(" -----------------------")
 
 
-def _get_schema_sid(stone):
+def _get_board_stone_id(schema_stone):
     """Converts schema-provided stone to a board stone id (sid)."""
-    log.error(stone)
-    if stone['color'] == c.P1_COLOR:
-        return stone['number'] - 1
+    if schema_stone['color'] == c.P1_COLOR:
+        return schema_stone['number'] - 1
     else:
-        return stone['number'] + 8 - 1
+        return schema_stone['number'] + 8 - 1
+
+
+def _get_schema_stones(board):
+    # [{"number":1,"color":"red","x":0.04,"y":119.49,"angle":-45.8}]
+    stones = [
+        {"x": x / 12, "y": y / 12, "angle": -45, "number": i, "color": "red"}
+        for i, (x, y) in enumerate(board_utils.get_xy_team1(board))]
+
+    stones += [
+        {"x": x / 12, "y": y / 12, "angle": -45, "number": i, "color": "blue"}
+        for i, (x, y) in enumerate(board_utils.get_xy_team2(board))]
+
+    return stones
+
+
+def _get_schema_game(board):
+    # {"end":1,"firstHammer":"blue","red":1,"blue":0}
+
+    red = board_utils.thrownStones_team1(board)
+    blue = board_utils.thrownStones_team2(board)
+    return {"end": 1, "firstHammer": "blue", "red": red, "blue": blue}
