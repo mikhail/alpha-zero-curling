@@ -22,7 +22,7 @@ class Model(nn.Sequential):
             torch.nn.Linear(height, self.out_features),
         )
 
-        logging.info(f"Created ANN model: %s", str(self))
+        logging.debug(f"Created ANN model: %s", str(self))
 
     def forward(self, s: torch.Tensor):
         logging.debug(f's.size: {s.size()}')

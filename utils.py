@@ -15,6 +15,14 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-class dotdict(dict):
+class old_dotdict(dict):
     def __getattr__(self, name):
-        return self[name]
+        return self.get(name)
+
+
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+

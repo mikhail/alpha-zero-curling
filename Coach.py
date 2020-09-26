@@ -5,6 +5,24 @@ import sys
 import time
 from collections import deque
 from datetime import datetime
+
+import torch
+import torch.multiprocessing as mp
+
+from utils import dotdict
+from curling.game import CurlingGame
+from pytorch.NNet import NNetWrapper as nn
+
+try:
+    # mp.set_start_method("spawn")
+    pass
+except RuntimeError:
+    pass
+
+#mp_ctx = mp.get_context("spawn")
+
+
+
 from pickle import Pickler, Unpickler
 
 import numpy as np
@@ -23,6 +41,60 @@ def get_hour():
     return datetime.fromtimestamp(now).hour
 
 
+def _execute_episode(return_examples, lock):
+    lock.acquire()
+    args = dotdict({
+        'numIters': 200,
+        'numEps': 2,  # Number of complete self-play games to simulate during a new iteration.
+        'tempThreshold': 4,  # Number of moves to "explore" before choosing optimal moves
+        'updateThreshold': 0.51,
+        # During arena playoff, new neural net will be accepted if threshold or more of games are won.
+        'maxlenOfQueue': 500,  # Number of game examples to train the neural networks.
+        'numMCTSSims': 90,  # Number of games moves for MCTS to simulate.
+        'arenaCompare': 8,  # Number of games to play during arena play to determine if new net will be accepted.
+        'cpuct': 1,
+
+        'checkpoint': './curling/test_data_10_layers_256/',
+        'load_folder_file': ('./curling/test_data_10_layers_256/', 'checkpoint_best.pth.tar'),
+        'numItersForTrainExamplesHistory': 100,
+    })
+
+    args['load_model'] = os.path.exists(''.join(args['load_folder_file']))
+
+    game = CurlingGame()
+    nnet = nn(game)
+    train_examples = []
+    board = game.getInitBoard()
+    player = 1
+    episode_step = 0
+
+    result = 0
+    mcts = MCTS(game, nnet, args)  # reset search tree
+    for _ in range(16):
+        episode_step += 1
+        canonicalBoard = game.getCanonicalForm(board, player)
+        temp = int(episode_step < args.tempThreshold)
+
+        lock.release()
+        pi = mcts.getActionProb(canonicalBoard, temp=temp)
+        lock.acquire()
+        sym = game.getSymmetries(canonicalBoard, pi)
+        for b, p in sym:
+            train_examples.append([b, player, p, None])
+
+        np.random.seed(int(time.time()))
+        action = np.random.choice(len(pi), p=pi)
+        board, player = game.getNextState(board, player, action)
+
+        result = game.getGameEnded(board, player)
+
+    assert result != 0
+    return_examples += [(x[0], x[2], result * ((-1) ** (x[1] != player))) for x in train_examples]
+    del return_examples[:-args.maxlenOfQueue]
+    lock.release()
+    return
+
+
 class Coach():
     """
     This class executes the self-play + learning. It uses the functions defined
@@ -38,7 +110,7 @@ class Coach():
         self.trainExamplesHistory = []  # history of examples from args.numItersForTrainExamplesHistory latest iterations
         self.skipFirstSelfPlay = False  # can be overriden in loadTrainExamples()
 
-    def executeEpisode(self):
+    def executeEpisode(self, return_examples):
         """
         This function executes one episode of self-play, starting with player 1.
         As the game is played, each turn is added as a training example to
@@ -60,12 +132,13 @@ class Coach():
         episode_step = 0
 
         result = 0
-        for _ in tqdm(range(16), desc="Episode", ncols=100):
+        mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
+        for _ in tqdm(range(16), desc="Episode", ncols=100, leave=False):
             episode_step += 1
             canonicalBoard = self.game.getCanonicalForm(board, player)
             temp = int(episode_step < self.args.tempThreshold)
 
-            pi = self.mcts.getActionProb(canonicalBoard, temp=temp)
+            pi = mcts.getActionProb(canonicalBoard, temp=temp)
             sym = self.game.getSymmetries(canonicalBoard, pi)
             for b, p in sym:
                 train_examples.append([b, player, p, None])
@@ -77,7 +150,9 @@ class Coach():
             result = self.game.getGameEnded(board, player)
 
         assert result != 0
-        return [(x[0], x[2], result * ((-1) ** (x[1] != player))) for x in train_examples]
+        return_examples += [(x[0], x[2], result * ((-1) ** (x[1] != player))) for x in train_examples]
+        del return_examples[:-self.args.maxlenOfQueue]
+        return
 
     def learn(self):
         """
@@ -97,14 +172,24 @@ class Coach():
             print('------ITER ' + str(i) + '------')
             # examples of the iteration
             if not self.skipFirstSelfPlay or i > 1:
-                iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
+                spawn = mp.get_context('spawn')
+                manager = mp.Manager()
+                examples = manager.list()
+                lock = mp.Lock()
 
-                for _ in tqdm(range(self.args.numEps), desc="Self Play", ncols=100):
-                    self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
-                    iterationTrainExamples += self.executeEpisode()
+                processes = []
+                for _ in range(self.args.numEps):
+                    p = spawn.Process(target=_execute_episode, args=[examples, lock])
+                    p.start()
+                    processes.append(p)
+
+                for p in tqdm(processes, desc="Self Play", ncols=100):
+                    p.join()
 
                 # save the iteration examples to the history 
-                self.trainExamplesHistory.append(iterationTrainExamples)
+                self.trainExamplesHistory.append(examples[-self.args.maxlenOfQueue:])
+                del examples
+                del manager
 
             if len(self.trainExamplesHistory) > self.args.numItersForTrainExamplesHistory:
                 print("len(trainExamplesHistory) =", len(self.trainExamplesHistory),
