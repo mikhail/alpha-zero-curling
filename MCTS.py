@@ -28,7 +28,7 @@ class MCTS():
         self.Es = {}  # stores game.getGameEnded ended for board s
         self.Vs = {}  # stores game.getValidMoves for board s
 
-    def getActionProb(self, canonicalBoard, temp=1):
+    def getActionProb(self, canonicalBoard, temp=1, progressbar=True):
         """
         This function performs numMCTSSims simulations of MCTS starting from
         canonicalBoard.
@@ -37,7 +37,9 @@ class MCTS():
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        for i in tqdm(range(self.args.numMCTSSims), desc="MCTS", leave=False, ncols=100):
+
+        for i in tqdm(range(self.args.numMCTSSims), desc="MCTS", leave=False, ncols=100,
+                      disable=(not progressbar)):
             self.search(canonicalBoard)
 
         s = self.game.stringRepresentation(canonicalBoard)

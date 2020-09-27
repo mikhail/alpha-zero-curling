@@ -217,7 +217,7 @@ ZERO_VECTOR = pymunk.Vec2d(0, 0)
 
 
 def addBoundaries(space: Space):
-    log.info('Adding boundaries to space')
+    log.debug('Adding boundaries to space')
     left = -ICE_WIDTH / 2  # I think it should be offset by 1 radius but tests say otherwise
     right = ICE_WIDTH / 2
     # stones are removed when they exit the actual backline.
@@ -237,24 +237,24 @@ def addBoundaries(space: Space):
     w2.collision_type = 2
     w3.collision_type = 2
 
-    def remove_stone(arbiter, local_space, data):
-        stone, wall = arbiter.shapes
-
-        if getattr(stone, 'already_removed', False):
-            return False
-
-        if five_rock_rule(stone, local_space):
-            local_space.five_rock_rule_violation = True
-            log.debug('Stone %s triggered 5-rock rule violation.', stone)
-            return False
-        setattr(stone, 'already_removed', True)
-        local_space.remove_stone(stone, 'Collision with the wall name: %s' % getattr(wall, 'name'))
-
-        return True
-
     space.add_collision_handler(1, 2).begin = remove_stone
 
     space.add(w1, w2, w3)
+
+def remove_stone(arbiter, local_space, data):
+    stone, wall = arbiter.shapes
+
+    if getattr(stone, 'already_removed', False):
+        return False
+
+    if five_rock_rule(stone, local_space):
+        local_space.five_rock_rule_violation = True
+        log.debug('Stone %s triggered 5-rock rule violation.', stone)
+        return False
+    setattr(stone, 'already_removed', True)
+    local_space.remove_stone(stone, 'Collision with the wall name: %s' % getattr(wall, 'name'))
+
+    return True
 
 
 def still_moving(shape):

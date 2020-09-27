@@ -7,7 +7,7 @@ import torch
 import log_handler
 from Coach import Coach
 from curling.game import CurlingGame
-from pytorch.NNet import NNetWrapper as nn
+from pytorch.NNet import NNetWrapper
 from utils import *
 
 log = logging.getLogger('')
@@ -31,6 +31,7 @@ args = dotdict({
     'numMCTSSims': 90,  # Number of games moves for MCTS to simulate.
     'arenaCompare': 8,  # Number of games to play during arena play to determine if new net will be accepted.
     'cpuct': 1,
+    'parallel': 4,
 
     'checkpoint': './curling/data_10_layers_256/',
     'load_folder_file': ('./curling/data_10_layers_256/', 'checkpoint_best.pth.tar'),
@@ -43,20 +44,9 @@ args['load_model'] = path.exists(''.join(args['load_folder_file']))
 @log_handler.on_error(capacity=300)
 def main():
     log.info('Cuda enabled: %s', torch.cuda.is_available())
-    log.info('Loading Curling...')
-    g = CurlingGame()
-
-    log.info('Loading nn...')
-    nnet = nn(g)
-
-    if args.load_model:
-        log.info('Loading checkpoint...')
-        nnet.load_checkpoint(args.load_folder_file[0], args.load_folder_file[1])
-    else:
-        log.warning('Not loading a checkpoint!')
 
     log.info('Loading Coach...')
-    c = Coach(g, nnet, args)
+    c = Coach(CurlingGame, NNetWrapper, args)
 
     if args.load_model:
         log.info("Load trainExamples from file")
