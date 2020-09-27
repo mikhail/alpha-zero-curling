@@ -14,7 +14,7 @@ def dist(inches=0., feet=0., meters=0.):
 script_dir = os.path.dirname(__file__)
 
 with open(script_dir + '/shared_constants.yaml') as sc_file:
-    sc = yaml.load(sc_file, Loader=yaml.Loader)
+    sc = yaml.load(sc_file)
 
     STONE_RADIUS_IN = sc['STONE_RADIUS_IN']
     STONE_MASS = sc['STONE_MASS']

@@ -38,7 +38,9 @@ class NNetWrapper(NeuralNet):
         examples: list of examples, each example is of form (board, pi, v)
         """
 
-        for _ in tqdm(range(args.epochs), desc="Epoch", ncols=100):
+        for epoch in tqdm(range(args.epochs), ncols=100):
+            print('EPOCH ::: ' + str(epoch + 1))
+
             batch_idx = 0
 
             while batch_idx < int(len(examples) / args.batch_size):
