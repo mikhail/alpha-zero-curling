@@ -99,7 +99,8 @@ class Stone(pymunk.Circle):
     body: pymunk.Body
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        log.error(f"Received {args} and {kwargs}")
+        pymunk.Circle.__init__(self, *args, **kwargs)
 
         # Set to true if stone created in the guard zone. Used for 5-rock rule
         self.is_guard = False
@@ -266,7 +267,7 @@ def still_moving(shape):
 def newStone(color: str):
     body = pymunk.Body()
     body.velocity_func = stone_velocity
-    stone = Stone(body, STONE_RADIUS)
+    stone = Stone(body=body, radius=STONE_RADIUS)
     stone.mass = c.STONE_MASS
     stone.color = color
     stone.friction = 1.004  # interaction with other objects, not with "ice"

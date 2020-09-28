@@ -19,18 +19,19 @@ class MCTS():
     """
 
     def __init__(self, game, nnet, args):
+        manager = Manager()
+
         self.game = game
         self.nnet = nnet
         self.args = args
-        self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
-        self.Nsa = {}  # stores #times edge s,a was visited
-        self.Ns = {}  # stores #times board s was visited
-        self.Ps = {}  # stores initial policy (returned by neural net)
+        self.Qsa = manager.dict()  # stores Q values for s,a (as defined in the paper)
+        self.Nsa = manager.dict()  # stores #times edge s,a was visited
+        self.Ns = manager.dict()  # stores #times board s was visited
+        self.Ps = manager.dict()  # stores initial policy (returned by neural net)
 
-        self.Es = {}  # stores game.getGameEnded ended for board s
-        self.Vs = {}  # stores game.getValidMoves for board s
+        self.Es = manager.dict()  # stores game.getGameEnded ended for board s
+        self.Vs = manager.dict()  # stores game.getValidMoves for board s
 
-        manager = Manager()
         self.lock = manager.Lock()
 
     def getActionProb(self, canonicalBoard, temp=1):
@@ -42,7 +43,7 @@ class MCTS():
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        t = pool.ThreadPool(processes=4)
+        t = pool.Pool(processes=4)
         t.map(self.search, repeat(canonicalBoard, 10))
         t.close()
 
