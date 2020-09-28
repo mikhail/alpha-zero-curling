@@ -16,5 +16,15 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 class dotdict(dict):
-    def __getattr__(self, name):
-        return self[name]
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+    def __getstate__(self):
+        # We are being pickled!
+        return self.__dict__
+
+    def __setstate__(self, state):
+        # Unpickling!
+        self.__dict__ = state

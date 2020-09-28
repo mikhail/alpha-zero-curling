@@ -286,7 +286,7 @@ def getCurlingForce(body:pymunk.Body) -> pymunk.Vec2d:
 
     speed = body.velocity.length / 25
 
-    curlFromSpeed = sqGauss(speed, 1500, 0, 0.2, 1.5)
+    curlFromSpeed = sqGauss(speed, 1300, 0, 0.2, 1.5)
 
     curl_effect = 1
     if abs(body.angular_velocity) < 0.01:

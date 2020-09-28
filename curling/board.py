@@ -34,17 +34,18 @@ def update_distance_and_score(board: np.array):
     shot_stones = np.argsort(board[c.BOARD_DISTANCE])
 
     if shot_stones[0] < 8:
-        team_range = range(0,8)
+        team_range = range(0, 8)
     else:
-        team_range = range(8,16)
+        team_range = range(8, 16)
 
     board[c.BOARD_SCORING].fill(c.NOT_SCORING)
     for i in range(8):
-      stone_id = shot_stones[i]
-      if stone_id in team_range:
-        board[c.BOARD_SCORING][stone_id] = c.SCORING
-      else:
-          break
+        stone_id = shot_stones[i]
+        if stone_id not in team_range:
+            break
+        stone = board[:, stone_id]
+        if stone[c.BOARD_THROWN] and stone[c.BOARD_IN_PLAY]:
+            stone[c.BOARD_SCORING] = c.SCORING
 
 
 
@@ -107,6 +108,15 @@ def getBoardRepr(board):
 
 def thrownStones(board):
     return np.sum(board[c.BOARD_THROWN])
+
+
+def thrownStones_team1(board):
+    return np.sum(board[c.BOARD_THROWN][0:8])
+
+
+def thrownStones_team2(board):
+    return np.sum(board[c.BOARD_THROWN][8:16])
+
 
 def scenario_all_out_of_play(board):
     board[c.BOARD_THROWN].fill(c.THROWN)
