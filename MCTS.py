@@ -1,7 +1,5 @@
 import logging
 import math
-from itertools import repeat
-from multiprocessing import pool, Lock, Manager
 
 import numpy as np
 from tqdm import tqdm
@@ -30,9 +28,6 @@ class MCTS():
         self.Es = {}  # stores game.getGameEnded ended for board s
         self.Vs = {}  # stores game.getValidMoves for board s
 
-        manager = Manager()
-        self.lock = manager.Lock()
-
     def getActionProb(self, canonicalBoard, temp=1):
         """
         This function performs numMCTSSims simulations of MCTS starting from
@@ -42,12 +37,8 @@ class MCTS():
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        t = pool.ThreadPool(processes=4)
-        t.map(self.search, repeat(canonicalBoard, 10))
-        t.close()
-
-        # for i in tqdm(range(self.args.numMCTSSims), desc="MCTS", leave=False, ncols=100):
-        #     self.search(canonicalBoard)
+        for i in tqdm(range(self.args.numMCTSSims), desc="MCTS", leave=False, ncols=100):
+            self.search(canonicalBoard)
 
         s = self.game.stringRepresentation(canonicalBoard)
         counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 for a in range(self.game.getActionSize())]
@@ -84,31 +75,27 @@ class MCTS():
         Returns:
             v: the negative of the `value` of the current canonicalBoard
         """
-        self.lock.acquire()
+
         s = self.game.stringRepresentation(canonicalBoard)
         log.debug('search() stringRepresentation (s): %s', s)
+
         if s not in self.Es:
             self.Es[s] = self.game.getGameEnded(canonicalBoard, 1)
             log.debug('Es[s]: %s', self.Es[s])
 
         if self.Es[s] != 0:
             # terminal node
-            self.lock.release()
             return -self.Es[s]
 
         if s not in self.Ps:
             v = self._populate_Pss(canonicalBoard, s)
-            self.lock.release()
             return -v
-
 
         a = self._get_best_action(s)
         next_s, next_player = self.game.getNextState(canonicalBoard, 1, a)
         next_s = self.game.getCanonicalForm(next_s, next_player)
 
-        self.lock.release()
         v = self.search(next_s)
-        self.lock.acquire()
 
         if (s, a) in self.Qsa:
             self.Qsa[(s, a)] = (self.Nsa[(s, a)] * self.Qsa[(s, a)] + v) / (self.Nsa[(s, a)] + 1)
@@ -119,7 +106,6 @@ class MCTS():
             self.Nsa[(s, a)] = 1
 
         self.Ns[s] += 1
-        self.lock.release()
         return -v
 
     def _populate_Pss(self, canonicalBoard, s):
