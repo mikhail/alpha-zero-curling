@@ -69,7 +69,7 @@ WEIGHT_FT = {
     #    'normal': 154,
     #    'peel': 160
 }
-HANDLES = (1, -1)  # rotation velocity
+HANDLES = (-1, 1)  # rotation velocity
 BROOMS = range(-6, 7)
 ACTION_LIST: Tuple[Tuple[int, str, int]] = tuple(
     (h, w, b)

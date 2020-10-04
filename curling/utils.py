@@ -146,6 +146,8 @@ class Stone(pymunk.Circle):
     def getXY(self):
         return self.body.position.x, self.body.position.y
 
+    def getAngle(self):
+        return self.body.angle
 
 def realToBoard(x: float, y: float) -> (int, int):
     return x, y
@@ -189,7 +191,7 @@ def stone_velocity(body, gravity, damping, dt):
 
     # TODO: It appears that the following block has no effect
     direction = 1 if body.angular_velocity > 0 else -1
-    angular_damping = 0.0001
+    angular_damping = 0.001
     if abs(body.angular_velocity) > angular_damping:
         body.angular_velocity -= angular_damping * direction
     else:
@@ -292,7 +294,7 @@ def getCurlingForce(body:pymunk.Body) -> pymunk.Vec2d:
     if abs(body.angular_velocity) < 0.01:
         curl_effect = 0
 
-    direction = 90 if body.angular_velocity < 0 else -90
+    direction = -90 if body.angular_velocity < 0 else 90
     curlVector = body.velocity.normalized() * (curlFromSpeed * curl_effect)
     curlVector.rotate_degrees(direction)
 

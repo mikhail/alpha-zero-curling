@@ -75,7 +75,7 @@ class CurlingGame:
 
         for action in range(self.getActionSize()):
             h, w, b = utils.decodeAction(action)
-            if h * b < 0:  # clever hack to check that handle and broom not both positive or both negative.
+            if h * b > 0:  # clever hack to check that handle and broom not both positive or both negative.
                 all_actions[action] = 0
 
         if sum(all_actions) == 0:
