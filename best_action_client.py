@@ -44,23 +44,28 @@ AZ_NAME = f"🧠 AlphaZero ({AZ_COLOR})"
 
 
 @log_handler.on_error()
-def get_best_action(board, use_mcts: bool, player: AZ_TEAM_OMO):
-    if use_mcts:
-        now = time.time()
-        args1 = utils.dotdict({'numMCTSSims': 180, 'cpuct': 1.0})
-        mcts1 = MCTS(game, n1, args1)
-        board = game.getCanonicalForm(board, player)
-        best_action = np.argmax(mcts1.getActionProb(board, temp=0))
-        log.info('Considering the shot: ' + str(c_utils.decodeAction(best_action)))
-    else:
-        p, v = n1.predict(board)
-        best_action = np.argmax(p)
+def get_best_action_web(board, use_mcts: bool, player: AZ_TEAM_OMO):
+    best_action = get_best_action(board, player, use_mcts)
+    log.info('Choosing the shot: ' + str(c_utils.decodeAction(best_action)))
     handle, weight, broom = c_utils.decodeAction(best_action)
+
     next_state, next_player = game.getNextState(board, 1, int(best_action))
     next_state = game.getCanonicalForm(next_state, next_player)
 
     action_obj = {"handle": handle, "weight": str(weight).title(), "broom": broom}
     return action_obj, next_state
+
+
+def get_best_action(board, player, use_mcts):
+    if use_mcts:
+        args1 = utils.dotdict({'numMCTSSims': 2, 'cpuct': 1.0})
+        mcts1 = MCTS(game, n1, args1)
+        board = game.getCanonicalForm(board, player)
+        best_action = int(np.argmax(mcts1.getActionProb(board, temp=0)))
+    else:
+        p, v = n1.predict(board)
+        best_action = int(np.argmax(p))
+    return best_action
 
 
 sio = socketio.Client(logger=False)
@@ -70,6 +75,7 @@ sio = socketio.Client(logger=False)
 def connect():
     log.info('connection established')
     sio.emit('set_username', AZ_NAME)
+    sio.emit('get_history')
 
 
 @sio.event
@@ -95,7 +101,7 @@ def state(data):
         return
     log.info('Got board. calculating action')
     sio.emit('set_username', AZ_NAME + " thinking ...")
-    action, state = get_best_action(board, use_mcts=True, player=AZ_TEAM_OMO)
+    action, state = get_best_action_web(board, use_mcts=True, player=AZ_TEAM_OMO)
     action['color'] = AZ_COLOR
     action['handle'] *= 0.07
 
@@ -104,6 +110,7 @@ def state(data):
     sio.emit('set_username', AZ_NAME)
     sio.emit('shot', action)
     time.sleep(5)
+    state = game.getCanonicalForm(state, 0 - AZ_TEAM_OMO)
     sio.emit('set_state', game.boardToSchema(state))
 
 @sio.event
@@ -111,6 +118,7 @@ def disconnect():
     log.info('disconnected from server')
 
 
-sio.connect('http://localhost:3000/?room=/vs_ai')
-# sio.connect('http://curling-socket.herokuapp.com/?room=/vs-ai')
-sio.wait()
+if __name__ == '__main__':
+    sio.connect('http://localhost:3000/?room=/vs_ai')
+    # sio.connect('http://curling-socket.herokuapp.com/?room=/vs-ai')
+    sio.wait()
