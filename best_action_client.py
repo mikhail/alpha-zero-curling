@@ -31,9 +31,9 @@ logging.getLogger('socketio').setLevel('WARN')
 game = CurlingGame()
 
 log.info('Loading NNet for Curling...')
-n1 = NNet(game)
+nnet = NNet(game)
 log.info('Loading checkpoint...')
-n1.load_checkpoint('./kirill/ann_6_features/', 'checkpoint_best.pth.tar')
+nnet.load_checkpoint('./kirill/ann_6_features/', 'checkpoint_best.pth.tar')
 log.info('Ready! 🚀 ')
 
 AZ_TEAM = int(os.environ.get('AZ_TEAM', '0'))
@@ -58,12 +58,12 @@ def get_best_action_web(board, use_mcts: bool, player: AZ_TEAM_OMO):
 
 def get_best_action(board, player, use_mcts):
     if use_mcts:
-        args1 = utils.dotdict({'numMCTSSims': 2, 'cpuct': 1.0})
-        mcts1 = MCTS(game, n1, args1)
+        args1 = utils.dotdict({'numMCTSSims': 128, 'cpuct': 1.0})
+        mcts1 = MCTS(game, nnet, args1)
         board = game.getCanonicalForm(board, player)
         best_action = int(np.argmax(mcts1.getActionProb(board, temp=0)))
     else:
-        p, v = n1.predict(board)
+        p, v = nnet.predict(board)
         best_action = int(np.argmax(p))
     return best_action
 
