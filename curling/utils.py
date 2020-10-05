@@ -85,7 +85,7 @@ class Space(pymunk.Space):
         return self.shooter_color
 
     def remove_stone(self, stone, reason=''):
-        log.debug(f'- {stone} {reason}')
+        log.info(f'- {stone} {reason}')
         team = stone.getTeamId()
         if team == c.P1:
             self.inplay_stones[stone.id] = c.OUT_OF_PLAY

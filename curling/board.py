@@ -48,6 +48,11 @@ def update_distance_and_score(board: np.array):
             stone[c.BOARD_SCORING] = c.SCORING
 
 
+def get_stones_in_play(board: np.array):
+    for stone in board.T:
+        if stone[c.BOARD_IN_PLAY] == c.IN_PLAY and stone[c.BOARD_THROWN] == c.THROWN:
+            yield stone
+
 
 def stones_for_team(board: np.array, team: int):
     start = 0

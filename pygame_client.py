@@ -72,7 +72,9 @@ def _nextTurn(board):
         return
 
     color = c.P1_COLOR if next_player == c.P1 else c.P2_COLOR
+    logging.getLogger('curling.utils').setLevel('WARNING')
     best_action = get_best_action(board, player=next_player, use_mcts=True)
+    logging.getLogger('curling.utils').setLevel('INFO')
     # best_action = 163
     handle, weight, broom = utils.decodeAction(best_action)
     log.info(f"{color} Throwing ({best_action}) {weight} @ {broom}")

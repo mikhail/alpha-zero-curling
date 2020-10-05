@@ -1,8 +1,8 @@
 import json
 import logging
 
+import memoization as mem
 import numpy as np
-#TODO add LRU (or better MRU) cache back
 
 from curling import board as board_utils
 from curling import constants as c
@@ -22,6 +22,11 @@ class CurlingGame:
 
     def __init__(self):
         self.sim = simulation.Simulation()
+        self.caches = []
+        for _ in range(16):
+            new_cache = mem.cached(algorithm=mem.LFU, max_size=len(c.ACTION_LIST) ** 2,
+                                   custom_key_maker=self._custom_keys)(self.getNextState)
+            self.caches.append(new_cache)
 
     @classmethod
     def getBoardSize(cls):
@@ -34,8 +39,19 @@ class CurlingGame:
     def getActionSize(self):
         return len(c.ACTION_LIST)
 
-    def getNextState(self, board, player, action):
+    def _custom_keys(self, board, player, action, use_cache=True):
+        log.debug('_custom_keys called')
+        log.debug('%s, %s, %s', board, player, action)
+        return np.array2string(board, precision=5), player, action
+
+    def getNextState(self, board, player, action, use_cache=True):
         log.debug(f'getNextState({self.stringRepresentation(board)}, {player}, {action}={utils.decodeAction(action)})')
+
+        if use_cache:
+            cache_idx = len(list(board_utils.get_stones_in_play(board)))
+            log.debug(f"Using cache[{cache_idx}]")
+            cache = self.caches[cache_idx]
+            return cache(board, player, action, use_cache=False)
 
         self.sim.setupBoard(board)
 

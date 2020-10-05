@@ -12,6 +12,10 @@ from curling import utils
 inch = utils.dist(inches=1)
 
 
+class UnitTestException(Exception):
+    """For testing expected exceptions."""
+
+
 def test_board_is_2d():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -252,6 +256,17 @@ def test_string_repr_is_symmetric():
     board_check = curl.sim.getBoard()
 
     np.testing.assert_array_equal(board_setup, board_check)
+
+
+@log_handler.on_error()
+def test_getNextState_is_cached():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+
+    curl.sim.setupBoard = mock.Mock(side_effect=UnitTestException)
+    curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
 
 
 def test_getSymmetries_flip():

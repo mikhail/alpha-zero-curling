@@ -1,6 +1,7 @@
 PyYAML==5.3.1
 coloredlogs==14.0
 jsonschema==3.2.0
+memoization==0.3.1
 pymunk==5.6.0
 pytest==6.0.1
 python-socketio==4.6.0

@@ -3,7 +3,6 @@ from unittest import mock
 
 import numpy as np
 
-import log_handler
 from curling import board as board_utils
 from curling import constants as c
 from curling import game
@@ -22,7 +21,7 @@ def test_getNextPlayer_1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, '3', 5)))
 
     total_stones = len(curl.sim.getStones())
 
@@ -34,8 +33,8 @@ def test_getNextPlayer_2():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
-    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, '3', 5)))
 
     total_stones = len(curl.sim.getStones())
 
@@ -47,9 +46,9 @@ def test_getNextPlayer_3():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
-    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
-    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, '3', 5)))
 
     total_stones = len(curl.sim.getStones())
 
@@ -57,15 +56,14 @@ def test_getNextPlayer_3():
     assert next_player == c.P2
 
 
-
 def test_getNextPlayer_4():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
-    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
-    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
-    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, '3', 5)))
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, '3', 5)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, '3', 5)))
 
     total_stones = len(curl.sim.getStones())
 
@@ -91,7 +89,7 @@ def test_guard():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+    curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, '3', 5)))
 
     shooter = curl.sim.getStones()[0]
     shooter.updateGuardValue()  # We normally only do this during addStone()
@@ -102,7 +100,7 @@ def test_draw():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '7', 6)))
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, '7', 6)))
 
     p1_stones = len(list(board_utils.get_xy_team1(next_board)))
 
@@ -118,7 +116,7 @@ def test_control():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, 'control', 6)))
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, 'control', 6)))
 
     p1_stones = len(list(board_utils.get_xy_team1(next_board)))
 
@@ -131,7 +129,7 @@ def test_5_rock_rule():
     board = curl.getInitBoard()
 
     # Set up a guard
-    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 6)))
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, '3', 5)))
     assert next_player == c.P2
     shooter = curl.sim.getStones()[0]
     shooter.updateGuardValue()  # We normally only do this during addStone()
@@ -139,7 +137,7 @@ def test_5_rock_rule():
 
     # Take it out
     with mock.patch.object(curl.sim, 'addShooterAsInvalid', wraps=curl.sim.addShooterAsInvalid) as spy:
-        next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, 'control', 0)))
+        next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, 'control', 0)))
         assert spy.call_count == 1
     assert next_player == c.P1
 
@@ -158,13 +156,13 @@ def test_5_rock_rule_reverse():
     board = curl.getInitBoard()
 
     # Set up a guard
-    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((-1, '3', -6)))
+    next_board, next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', -6)))
     shooter = curl.sim.getStones()[0]
     shooter.updateGuardValue()  # We normally only do this during addStone()
     assert shooter.is_guard
 
     # Take it out
-    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((-1, 'control', -4)))
+    next_board, next_player = curl.getNextState(next_board, next_player, c.ACTION_LIST.index((1, 'control', -4)))
     assert next_player == c.P1
 
     p1_stones = len(list(board_utils.get_xy_team1(next_board)))
@@ -181,7 +179,7 @@ def test_it_curls_left():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    curl.getNextState(board, 1, utils.getAction(1, '5', 1))
+    curl.getNextState(board, 1, utils.getAction(-1, '5', 0))
 
     stone = curl.sim.getStones()[0]
 
@@ -193,7 +191,7 @@ def test_it_curls_right():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    curl.getNextState(board, 1, utils.getAction(-1, '5', -1))
+    curl.getNextState(board, 1, utils.getAction(1, '5', 1))
 
     stone = curl.sim.getStones()[0]
 
@@ -209,14 +207,15 @@ def test_two_wall_collision():
     # curl = game.CurlingGame()
     # curl.getNextState(curl.boardFromString(bs), 1, 178)
 
+
 def test_getNextState_has_extra_data():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
 
-    next_board, _ = curl.getNextState(board, c.P1, utils.getAction(-1, '5', -1))
+    next_board, _ = curl.getNextState(board, c.P1, utils.getAction(1, '5', 0))
 
     np.testing.assert_almost_equal(
-        next_board[:,0],
+        next_board[:, 0],
         [70.3, 1450, 1, 1, 81.2, 1],
         decimal=-1
     )
