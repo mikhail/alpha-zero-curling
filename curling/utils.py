@@ -346,7 +346,7 @@ def getCanonicalForm(board: np.array, player):
     if player == c.P1:
         log.debug('Not flipping the board')
         return board
-
+    log.debug('Flipping the board for canonicalization')
     flip = np.concatenate((board[:, 8:16], board[:, 0:8]), axis=1)
 
     return flip

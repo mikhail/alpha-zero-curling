@@ -50,8 +50,14 @@ class CurlingGame:
         if use_cache:
             cache_idx = len(list(board_utils.get_stones_in_play(board)))
             log.debug(f"Using cache[{cache_idx}]")
+            flip = player == c.P2
+            canon = self.getCanonicalForm(board, player)
             cache = self.caches[cache_idx]
-            return cache(board, player, action, use_cache=False)
+            next_board, next_player = cache(canon, c.P1, action, use_cache=False)
+            if flip:
+                next_board = self.getCanonicalForm(next_board, c.P2)
+                next_player = c.P1
+            return next_board, next_player
 
         self.sim.setupBoard(board)
 

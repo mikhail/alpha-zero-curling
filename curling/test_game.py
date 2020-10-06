@@ -11,6 +11,8 @@ from curling import utils
 
 inch = utils.dist(inches=1)
 
+log_handler.flush_on_error()
+
 
 class UnitTestException(Exception):
     """For testing expected exceptions."""
@@ -64,7 +66,6 @@ def test_gameEnded_NoStonesInPlay():
     assert ended == 0.00001  # Draw
 
 
-@log_handler.on_error()
 def test_gameEnded_HammerWinsBy1():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -76,7 +77,6 @@ def test_gameEnded_HammerWinsBy1():
     assert ended == 1
 
 
-@log_handler.on_error()
 def test_gameEnded_HammerWinsBy2():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -258,7 +258,6 @@ def test_string_repr_is_symmetric():
     np.testing.assert_array_equal(board_setup, board_check)
 
 
-@log_handler.on_error()
 def test_getNextState_is_cached():
     curl = game.CurlingGame()
     board = curl.getInitBoard()
@@ -267,6 +266,25 @@ def test_getNextState_is_cached():
 
     curl.sim.setupBoard = mock.Mock(side_effect=UnitTestException)
     curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+
+
+def test_getNextState_cache_canonical():
+    curl = game.CurlingGame()
+    board = curl.getInitBoard()
+
+    p1_board, p1_next_player = curl.getNextState(board, c.P1, c.ACTION_LIST.index((1, '3', 5)))
+
+    curl.sim.setupBoard = mock.Mock(side_effect=UnitTestException)
+    p2_board, p2_next_player = curl.getNextState(board, c.P2, c.ACTION_LIST.index((1, '3', 5)))
+
+    assert p1_next_player == c.P2
+    assert p2_next_player == c.P1
+
+    with np.testing.assert_raises(AssertionError):
+        np.testing.assert_array_equal(p1_board, p2_board)
+
+    p1_board_canon = curl.getCanonicalForm(p1_board, c.P2)
+    np.testing.assert_array_equal(p1_board_canon[2], p2_board[2])
 
 
 def test_getSymmetries_flip():

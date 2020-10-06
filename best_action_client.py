@@ -42,8 +42,9 @@ AZ_TEAM_OMO = c.P2 if AZ_TEAM == 0 else c.P1
 AZ_COLOR = 'blue' if AZ_TEAM == 0 else 'red'
 AZ_NAME = f"🧠 AlphaZero ({AZ_COLOR})"
 
+log_handler.flush_on_error()
 
-@log_handler.on_error()
+
 def get_best_action_web(board, use_mcts: bool, player: AZ_TEAM_OMO):
     best_action = get_best_action(board, player, use_mcts)
     log.info('Choosing the shot: ' + str(c_utils.decodeAction(best_action)))
@@ -112,6 +113,7 @@ def state(data):
     time.sleep(5)
     state = game.getCanonicalForm(state, 0 - AZ_TEAM_OMO)
     sio.emit('set_state', game.boardToSchema(state))
+
 
 @sio.event
 def disconnect():
